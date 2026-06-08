@@ -74,12 +74,16 @@ export const logoutUser = createServerFn({ method: "POST" }).handler(async () =>
 });
 
 export const getSession = createServerFn({ method: "GET" }).handler(async () => {
-  await ensureIndexes();
-  const user = await getSessionUser();
-  if (!user) {
-    return { user: null, hasCompany: false };
-  }
+  try {
+    const user = await getSessionUser();
+    if (!user) {
+      return { user: null, hasCompany: false, dbError: false };
+    }
 
-  const hasCompany = await userHasCompany(new ObjectId(user.id));
-  return { user, hasCompany };
+    const hasCompany = await userHasCompany(new ObjectId(user.id));
+    return { user, hasCompany, dbError: false };
+  } catch (error) {
+    console.error("getSession failed:", error);
+    return { user: null, hasCompany: false, dbError: true };
+  }
 });

@@ -35,7 +35,10 @@ export async function getDb(): Promise<Db> {
   return client.db(getDatabaseName());
 }
 
+let indexesReady = false;
+
 export async function ensureIndexes() {
+  if (indexesReady) return;
   const db = await getDb();
   await Promise.all([
     db.collection("users").createIndex({ username: 1 }, { unique: true }),
@@ -47,4 +50,5 @@ export async function ensureIndexes() {
     db.collection("invoices").createIndex({ userId: 1, id: 1 }, { unique: true }),
     db.collection("invoices").createIndex({ userId: 1, savedAt: -1 }),
   ]);
+  indexesReady = true;
 }

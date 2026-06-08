@@ -26,6 +26,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
+  const { dbError } = Route.useLoaderData();
   const [mode, setMode] = useState<"signin" | "register">("signin");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -104,6 +105,14 @@ function Login() {
           <CardDescription>Sign in or create your account</CardDescription>
         </CardHeader>
         <CardContent>
+          {dbError ? (
+            <div className="mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Database connection failed. On Vercel, add <strong>DATABASE_URL</strong> (and
+              optionally <strong>DATABASE_NAME</strong>) under Project Settings → Environment
+              Variables, then redeploy. Also allow access from anywhere in MongoDB Atlas → Network
+              Access.
+            </div>
+          ) : null}
           <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "register")}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
