@@ -1,13 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
-
-import {
-  createSession,
-  destroySession,
-  getSessionData,
-} from "../auth.server";
-import { ensureIndexes, getDb } from "../db.server";
 
 export const registerUser = createServerFn({ method: "POST" })
   .inputValidator(
@@ -18,28 +10,8 @@ export const registerUser = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    await ensureIndexes();
-    const db = await getDb();
-    const username = data.username.trim().toLowerCase();
-    const email = data.email.trim().toLowerCase();
-
-    const existing = await db.collection("users").findOne({
-      $or: [{ username }, { email }],
-    });
-    if (existing) {
-      throw new Error("Username or email is already registered");
-    }
-
-    const passwordHash = await bcrypt.hash(data.password, 10);
-    const result = await db.collection("users").insertOne({
-      username,
-      email,
-      passwordHash,
-      createdAt: new Date(),
-    });
-
-    await createSession(result.insertedId);
-    return { success: true };
+    const { registerUserAccount } = await import("../auth.server");
+    return registerUserAccount(data);
   });
 
 export const loginUser = createServerFn({ method: "POST" })
@@ -50,25 +22,17 @@ export const loginUser = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    await ensureIndexes();
-    const db = await getDb();
-    const key = data.usernameOrEmail.trim().toLowerCase();
-
-    const user = await db.collection("users").findOne({
-      $or: [{ username: key }, { email: key }],
-    });
-
-    if (!user || !(await bcrypt.compare(data.password, user.passwordHash as string))) {
-      throw new Error("Invalid username/email or password");
-    }
-
-    await createSession(user._id);
-    return { success: true };
+    const { loginUserAccount } = await import("../auth.server");
+    return loginUserAccount(data);
   });
 
 export const logoutUser = createServerFn({ method: "POST" }).handler(async () => {
+  const { destroySession } = await import("../auth.server");
   await destroySession();
   return { success: true };
 });
 
-export const getSession = createServerFn({ method: "GET" }).handler(async () => getSessionData());
+export const getSession = createServerFn({ method: "GET" }).handler(async () => {
+  const { getSessionData } = await import("../auth.server");
+  return getSessionData();
+});

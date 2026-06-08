@@ -1,8 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { ObjectId } from "mongodb";
+import bcrypt from "bcryptjs";
 import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 
-import { getDb } from "./db.server";
+import { ensureIndexes, getDb } from "./db.server";
 
 export const SESSION_COOKIE = "horizon_session";
 const SESSION_DAYS = 30;
@@ -88,6 +89,52 @@ export type SessionData = {
   hasCompany: boolean;
   dbError: boolean;
 };
+
+export async function registerUserAccount(data: {
+  username: string;
+  email: string;
+  password: string;
+}) {
+  await ensureIndexes();
+  const db = await getDb();
+  const username = data.username.trim().toLowerCase();
+  const email = data.email.trim().toLowerCase();
+
+  const existing = await db.collection("users").findOne({
+    $or: [{ username }, { email }],
+  });
+  if (existing) {
+    throw new Error("Username or email is already registered");
+  }
+
+  const passwordHash = await bcrypt.hash(data.password, 10);
+  const result = await db.collection("users").insertOne({
+    username,
+    email,
+    passwordHash,
+    createdAt: new Date(),
+  });
+
+  await createSession(result.insertedId);
+  return { success: true };
+}
+
+export async function loginUserAccount(data: { usernameOrEmail: string; password: string }) {
+  await ensureIndexes();
+  const db = await getDb();
+  const key = data.usernameOrEmail.trim().toLowerCase();
+
+  const user = await db.collection("users").findOne({
+    $or: [{ username: key }, { email: key }],
+  });
+
+  if (!user || !(await bcrypt.compare(data.password, user.passwordHash as string))) {
+    throw new Error("Invalid username/email or password");
+  }
+
+  await createSession(user._id);
+  return { success: true };
+}
 
 export async function getSessionData(): Promise<SessionData> {
   try {
