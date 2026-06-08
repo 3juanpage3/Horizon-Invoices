@@ -12,5 +12,14 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
-  nitro: { preset: "vercel" },
+  nitro: {
+    preset: "vercel",
+    // MongoDB uses runtime require() — bundling it breaks on Vercel with "require is not defined".
+    traceDeps: ["mongodb"],
+  },
+  vite: {
+    ssr: {
+      external: ["mongodb"],
+    },
+  },
 });
