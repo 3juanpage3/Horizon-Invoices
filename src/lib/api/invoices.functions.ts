@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireUserId } from "../auth.server";
-import { ensureIndexes, getDb } from "../db.server";
 import { savedInvoiceSchema } from "../schemas";
 
 export const listInvoices = createServerFn({ method: "GET" }).handler(async () => {
+  const { requireUserId } = await import("../auth.server");
+  const { ensureIndexes, getDb } = await import("../db.server");
+
   await ensureIndexes();
   const userId = await requireUserId();
   const db = await getDb();
@@ -34,6 +35,9 @@ export const listInvoices = createServerFn({ method: "GET" }).handler(async () =
 export const saveInvoice = createServerFn({ method: "POST" })
   .inputValidator(savedInvoiceSchema)
   .handler(async ({ data }) => {
+    const { requireUserId } = await import("../auth.server");
+    const { ensureIndexes, getDb } = await import("../db.server");
+
     await ensureIndexes();
     const userId = await requireUserId();
     const db = await getDb();
@@ -57,6 +61,9 @@ export const saveInvoice = createServerFn({ method: "POST" })
 export const deleteInvoice = createServerFn({ method: "POST" })
   .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
+    const { requireUserId } = await import("../auth.server");
+    const { ensureIndexes, getDb } = await import("../db.server");
+
     await ensureIndexes();
     const userId = await requireUserId();
     const db = await getDb();

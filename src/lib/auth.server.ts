@@ -1,9 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { ObjectId } from "mongodb";
-import bcrypt from "bcryptjs";
 import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 
 import { ensureIndexes, getDb } from "./db.server";
+import { hashPassword, verifyPassword } from "./password.server";
 
 export const SESSION_COOKIE = "horizon_session";
 const SESSION_DAYS = 30;
@@ -107,7 +107,7 @@ export async function registerUserAccount(data: {
     throw new Error("Username or email is already registered");
   }
 
-  const passwordHash = await bcrypt.hash(data.password, 10);
+  const passwordHash = await hashPassword(data.password);
   const result = await db.collection("users").insertOne({
     username,
     email,
@@ -128,7 +128,7 @@ export async function loginUserAccount(data: { usernameOrEmail: string; password
     $or: [{ username: key }, { email: key }],
   });
 
-  if (!user || !(await bcrypt.compare(data.password, user.passwordHash as string))) {
+  if (!user || !(await verifyPassword(data.password, user.passwordHash as string))) {
     throw new Error("Invalid username/email or password");
   }
 

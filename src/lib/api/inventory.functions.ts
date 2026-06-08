@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { requireUserId } from "../auth.server";
-import { ensureIndexes, getDb } from "../db.server";
 import { inventoryItemSchema } from "../schemas";
 
 export const listInventory = createServerFn({ method: "GET" }).handler(async () => {
+  const { requireUserId } = await import("../auth.server");
+  const { ensureIndexes, getDb } = await import("../db.server");
+
   await ensureIndexes();
   const userId = await requireUserId();
   const db = await getDb();
@@ -26,6 +27,9 @@ export const listInventory = createServerFn({ method: "GET" }).handler(async () 
 export const saveInventoryItems = createServerFn({ method: "POST" })
   .inputValidator(z.object({ items: z.array(inventoryItemSchema) }))
   .handler(async ({ data }) => {
+    const { requireUserId } = await import("../auth.server");
+    const { ensureIndexes, getDb } = await import("../db.server");
+
     await ensureIndexes();
     const userId = await requireUserId();
     const db = await getDb();

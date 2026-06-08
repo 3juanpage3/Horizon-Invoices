@@ -1,7 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 
-import { requireUserId } from "../auth.server";
-import { ensureIndexes, getDb } from "../db.server";
 import { companySettingsSchema } from "../schemas";
 
 const DEFAULT_SETTINGS = {
@@ -20,6 +18,9 @@ const DEFAULT_SETTINGS = {
 };
 
 export const getCompanySettings = createServerFn({ method: "GET" }).handler(async () => {
+  const { requireUserId } = await import("../auth.server");
+  const { ensureIndexes, getDb } = await import("../db.server");
+
   await ensureIndexes();
   const userId = await requireUserId();
   const db = await getDb();
@@ -49,6 +50,9 @@ export const getCompanySettings = createServerFn({ method: "GET" }).handler(asyn
 export const createCompany = createServerFn({ method: "POST" })
   .inputValidator(companySettingsSchema)
   .handler(async ({ data }) => {
+    const { requireUserId } = await import("../auth.server");
+    const { ensureIndexes, getDb } = await import("../db.server");
+
     await ensureIndexes();
     const userId = await requireUserId();
     const db = await getDb();
@@ -78,6 +82,9 @@ export const createCompany = createServerFn({ method: "POST" })
 export const updateCompanySettings = createServerFn({ method: "POST" })
   .inputValidator(companySettingsSchema)
   .handler(async ({ data }) => {
+    const { requireUserId } = await import("../auth.server");
+    const { ensureIndexes, getDb } = await import("../db.server");
+
     await ensureIndexes();
     const userId = await requireUserId();
     const db = await getDb();
