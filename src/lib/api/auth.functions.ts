@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { createServerFn } from "@tanstack/react-start";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -6,8 +5,7 @@ import { z } from "zod";
 import {
   createSession,
   destroySession,
-  getSessionUser,
-  userHasCompany,
+  getSessionData,
 } from "../auth.server";
 import { ensureIndexes, getDb } from "../db.server";
 
@@ -73,17 +71,4 @@ export const logoutUser = createServerFn({ method: "POST" }).handler(async () =>
   return { success: true };
 });
 
-export const getSession = createServerFn({ method: "GET" }).handler(async () => {
-  try {
-    const user = await getSessionUser();
-    if (!user) {
-      return { user: null, hasCompany: false, dbError: false };
-    }
-
-    const hasCompany = await userHasCompany(new ObjectId(user.id));
-    return { user, hasCompany, dbError: false };
-  } catch (error) {
-    console.error("getSession failed:", error);
-    return { user: null, hasCompany: false, dbError: true };
-  }
-});
+export const getSession = createServerFn({ method: "GET" }).handler(async () => getSessionData());

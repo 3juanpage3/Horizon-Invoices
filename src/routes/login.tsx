@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSession } from "@/lib/api/auth.functions";
+import { loadSession } from "@/lib/load-session";
 import { useAuth } from "@/lib/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/login")({
   loader: async () => {
-    const session = await getSession();
+    const session = await loadSession();
     if (session.user && session.hasCompany) throw redirect({ to: "/" });
     if (session.user && !session.hasCompany) throw redirect({ to: "/setup" });
     return session;

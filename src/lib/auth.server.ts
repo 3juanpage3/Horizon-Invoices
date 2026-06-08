@@ -82,3 +82,24 @@ export async function userHasCompany(userId: ObjectId): Promise<boolean> {
   const company = await db.collection("companies").findOne({ userId });
   return !!company?.onboardingComplete;
 }
+
+export type SessionData = {
+  user: SessionUser | null;
+  hasCompany: boolean;
+  dbError: boolean;
+};
+
+export async function getSessionData(): Promise<SessionData> {
+  try {
+    const user = await getSessionUser();
+    if (!user) {
+      return { user: null, hasCompany: false, dbError: false };
+    }
+
+    const hasCompany = await userHasCompany(new ObjectId(user.id));
+    return { user, hasCompany, dbError: false };
+  } catch (error) {
+    console.error("getSessionData failed:", error);
+    return { user: null, hasCompany: false, dbError: true };
+  }
+}

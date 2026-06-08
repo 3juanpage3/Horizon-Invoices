@@ -7,14 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Trash2 } from "lucide-react";
 import { createCompany } from "@/lib/api/settings.functions";
-import { getSession } from "@/lib/api/auth.functions";
+import { loadSession } from "@/lib/load-session";
 import { DEFAULT_SETTINGS, type CompanySettings } from "@/lib/settings";
 import { useAuth } from "@/lib/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/setup")({
   loader: async () => {
-    const session = await getSession();
+    const session = await loadSession();
     if (!session.user) throw redirect({ to: "/login" });
     if (session.hasCompany) throw redirect({ to: "/" });
     return session;

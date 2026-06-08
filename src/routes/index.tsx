@@ -17,7 +17,7 @@ import {
 import { useInventory } from "@/lib/inventory";
 import { useAuth } from "@/lib/use-auth";
 import { useCompanySettings } from "@/lib/use-company-settings";
-import { getSession } from "@/lib/api/auth.functions";
+import { loadSession } from "@/lib/load-session";
 import { InventoryTab } from "@/components/inventory-tab";
 import { SettingsTab } from "@/components/settings-tab";
 import { HistoryTab } from "@/components/history-tab";
@@ -27,7 +27,7 @@ const logo = logoAsset.url;
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const session = await getSession();
+    const session = await loadSession();
     if (!session.user) throw redirect({ to: "/login" });
     if (!session.hasCompany) throw redirect({ to: "/setup" });
     return session;
