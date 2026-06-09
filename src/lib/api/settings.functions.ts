@@ -1,21 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
+import { DEFAULT_SETTINGS } from "../settings";
 import { companySettingsSchema } from "../schemas";
-
-const DEFAULT_SETTINGS = {
-  companyName: "",
-  contactPerson: "",
-  email: "",
-  phone: "",
-  address: "",
-  city: "",
-  postalCode: "",
-  country: "",
-  vatNumber: "",
-  businessRegistration: "",
-  bankDetails: "",
-  logo: undefined as string | undefined,
-};
 
 export const getCompanySettings = createServerFn({ method: "GET" }).handler(async () => {
   const { requireUserId } = await import("../auth.server");
@@ -43,6 +29,22 @@ export const getCompanySettings = createServerFn({ method: "GET" }).handler(asyn
     businessRegistration: (company.businessRegistration as string) ?? "",
     bankDetails: (company.bankDetails as string) ?? "",
     logo: company.logo as string | undefined,
+    defaultTerms:
+      "defaultTerms" in company
+        ? ((company.defaultTerms as string) ?? "")
+        : DEFAULT_SETTINGS.defaultTerms,
+    defaultLineItemDescription:
+      "defaultLineItemDescription" in company
+        ? ((company.defaultLineItemDescription as string) ?? "")
+        : DEFAULT_SETTINGS.defaultLineItemDescription,
+    defaultLineItemQty:
+      "defaultLineItemQty" in company
+        ? ((company.defaultLineItemQty as number) ?? 1)
+        : DEFAULT_SETTINGS.defaultLineItemQty,
+    defaultLineItemUnitPrice:
+      "defaultLineItemUnitPrice" in company
+        ? ((company.defaultLineItemUnitPrice as number) ?? 0)
+        : DEFAULT_SETTINGS.defaultLineItemUnitPrice,
     onboardingComplete: !!company.onboardingComplete,
   };
 });

@@ -13,6 +13,10 @@ export const companySettingsSchema = z.object({
   businessRegistration: z.string().optional().default(""),
   bankDetails: z.string().optional().default(""),
   logo: z.string().optional(),
+  defaultTerms: z.string().optional().default(""),
+  defaultLineItemDescription: z.string().optional().default(""),
+  defaultLineItemQty: z.number().optional().default(1),
+  defaultLineItemUnitPrice: z.number().optional().default(0),
 });
 
 export const inventoryItemSchema = z.object({

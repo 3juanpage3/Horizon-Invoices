@@ -17,6 +17,7 @@ import {
 import { useInventory } from "@/lib/inventory";
 import { useAuth } from "@/lib/use-auth";
 import { useCompanySettings } from "@/lib/use-company-settings";
+import { getDefaultLineItems, type CompanySettings } from "@/lib/settings";
 import { loadSession } from "@/lib/load-session";
 import { InventoryTab } from "@/components/inventory-tab";
 import { SettingsTab } from "@/components/settings-tab";
@@ -51,24 +52,11 @@ export const Route = createFileRoute("/")({
 
 type LineItem = { id: string; description: string; qty: number; unitPrice: number };
 
-const DEFAULT_TERMS = [
-  "K & H Jumping Castles will not be responsible for any loss or injury when our equipment are being used.",
-  "The use of our equipment is at your own risk. If stolen or damaged the client will be held responsible for the replacement of the item unless mutually agreed to by both parties.",
-  "There most always be an adult present and supervising the children.",
-  "No children may come near the motor.",
-  "No food or drinks on the inflatable.",
-  "Make sure no one wears shoes or any sharp objects.",
-  "Setting up the equipment in a flat clean area with no sharp objects on the ground preferarbly on grass.",
-  "K & H Jumping Castles does not accept any responsibility for weather conditions.",
-  "In case of rain deflate the item and fold it in half to keep the water from getting in.",
-  "If the motor got wet and is damaged it's the clients responsibility to replace it.",
-  "K & H Jumping Castles will not be responsible for the supplying of the extension cord to the motor.",
-  "Be aware of your pets that can damage the inflatable.",
-  "Please do not spray or play with paint near the inflatable!!! Most of them does not come off!!!!",
-];
-
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (n: number) => n.toFixed(2);
+
+const toLineItems = (settings: CompanySettings): LineItem[] =>
+  getDefaultLineItems(settings).map((item) => ({ id: uid(), ...item }));
 
 function Index() {
   const navigate = useNavigate();
@@ -81,15 +69,9 @@ function Index() {
   const [billToName, setBillToName] = useState("Lizzie");
   const [billToPhone, setBillToPhone] = useState("063-241-0457");
   const [billToAddress, setBillToAddress] = useState("20 Barend street\nWitpoortjie");
-  const [items, setItems] = useState<LineItem[]>([
-    {
-      id: "default-item",
-      description: "3-in-1 Jumping Castle (3.75x7 meters, 25th & 26th Dec 2025)",
-      qty: 1,
-      unitPrice: 275,
-    },
-  ]);
-  const [terms, setTerms] = useState(DEFAULT_TERMS.join("\n"));
+  const [items, setItems] = useState<LineItem[]>([]);
+  const [terms, setTerms] = useState("");
+  const [invoiceDefaultsApplied, setInvoiceDefaultsApplied] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const [tab, setTab] = useState<"invoice" | "history" | "inventory" | "settings">("invoice");
@@ -103,6 +85,13 @@ function Index() {
     if (settings.email) setEmail(settings.email);
     if (settings.phone) setCell(settings.phone);
   }, [settings.email, settings.phone]);
+
+  useEffect(() => {
+    if (settingsLoading || invoiceDefaultsApplied || activeInvoiceId) return;
+    setItems(toLineItems(settings));
+    setTerms(settings.defaultTerms);
+    setInvoiceDefaultsApplied(true);
+  }, [settingsLoading, settings, invoiceDefaultsApplied, activeInvoiceId]);
 
   const total = useMemo(() => items.reduce((s, it) => s + it.qty * it.unitPrice, 0), [items]);
 
@@ -198,8 +187,8 @@ function Index() {
     setBillToName("");
     setBillToPhone("");
     setBillToAddress("");
-    setItems([{ id: uid(), description: "", qty: 1, unitPrice: 0 }]);
-    setTerms(DEFAULT_TERMS.join("\n"));
+    setItems(toLineItems(settings));
+    setTerms(settings.defaultTerms);
   };
 
   const downloadPdf = async () => {

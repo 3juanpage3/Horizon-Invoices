@@ -18,6 +18,14 @@ export function SettingsTab() {
     });
   };
 
+  const handleNumberChange = (field: "defaultLineItemQty" | "defaultLineItemUnitPrice", value: string) => {
+    const parsed = value === "" ? 0 : Number(value);
+    setSettings({
+      ...settings,
+      [field]: Number.isFinite(parsed) ? parsed : 0,
+    });
+  };
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -187,6 +195,64 @@ export function SettingsTab() {
                 onChange={(e) => handleInputChange("bankDetails", e.target.value)}
                 placeholder="Bank name, account number, etc."
                 rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Invoice Defaults</CardTitle>
+            <CardDescription>
+              Default line item and terms used when creating a new invoice
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="defaultLineItemDescription">Default line item description</Label>
+              <Textarea
+                id="defaultLineItemDescription"
+                value={settings.defaultLineItemDescription}
+                onChange={(e) => handleInputChange("defaultLineItemDescription", e.target.value)}
+                placeholder="e.g., 3-in-1 Jumping Castle (3.75x7 meters)"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="defaultLineItemQty">Default quantity</Label>
+                <Input
+                  id="defaultLineItemQty"
+                  type="number"
+                  min={1}
+                  value={settings.defaultLineItemQty}
+                  onChange={(e) => handleNumberChange("defaultLineItemQty", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="defaultLineItemUnitPrice">Default unit price</Label>
+                <Input
+                  id="defaultLineItemUnitPrice"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={settings.defaultLineItemUnitPrice}
+                  onChange={(e) => handleNumberChange("defaultLineItemUnitPrice", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="defaultTerms">Default terms &amp; conditions</Label>
+              <p className="text-xs text-muted-foreground">One term per line.</p>
+              <Textarea
+                id="defaultTerms"
+                value={settings.defaultTerms}
+                onChange={(e) => handleInputChange("defaultTerms", e.target.value)}
+                rows={12}
+                className="font-mono text-xs"
               />
             </div>
           </CardContent>

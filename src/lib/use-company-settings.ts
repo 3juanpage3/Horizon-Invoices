@@ -29,6 +29,10 @@ export function useCompanySettings() {
         businessRegistration: query.data.businessRegistration,
         bankDetails: query.data.bankDetails,
         logo: query.data.logo,
+        defaultTerms: query.data.defaultTerms,
+        defaultLineItemDescription: query.data.defaultLineItemDescription,
+        defaultLineItemQty: query.data.defaultLineItemQty,
+        defaultLineItemUnitPrice: query.data.defaultLineItemUnitPrice,
       });
     }
   }, [query.data]);
