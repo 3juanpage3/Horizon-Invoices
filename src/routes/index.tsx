@@ -449,79 +449,88 @@ function Index() {
                   {/* Header */}
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 24,
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      columnGap: 24,
+                      rowGap: 8,
+                      alignItems: "start",
                     }}
                   >
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-                      <img
-                        src={displayLogo}
-                        alt={settings.companyName}
-                        style={{
-                          display: "block",
-                          height: 130,
-                          width: "auto",
-                          maxWidth: 220,
-                          objectFit: "contain",
-                          objectPosition: "left center",
-                        }}
-                      />
-                      <div style={{ fontSize: 11 }}>
-                        <div style={{ fontWeight: 700, marginBottom: 4 }}>{settings.companyName}</div>
-                        {settings.contactPerson ? <div>{settings.contactPerson}</div> : null}
-                        {companyAddress
-                          ? companyAddress.split("\n").map((line, i) => <div key={i}>{line}</div>)
-                          : null}
-                        <div style={{ marginTop: 4 }}>
-                          <b>Email:</b> &nbsp;{email}
-                        </div>
-                        <div>
-                          <b>Cell:</b> &nbsp;&nbsp;&nbsp;{cell}
-                        </div>
-                        {settings.vatNumber ? (
-                          <div>
-                            <b>VAT:</b> &nbsp;&nbsp;{settings.vatNumber}
-                          </div>
-                        ) : null}
-                        {settings.businessRegistration ? (
-                          <div>
-                            <b>Reg:</b> &nbsp;&nbsp;{settings.businessRegistration}
-                          </div>
-                        ) : null}
+                    <img
+                      src={displayLogo}
+                      alt={settings.companyName}
+                      style={{
+                        display: "block",
+                        gridColumn: 1,
+                        gridRow: "1 / 3",
+                        height: 260,
+                        width: "auto",
+                        maxWidth: 440,
+                        objectFit: "contain",
+                        objectPosition: "left top",
+                      }}
+                    />
+                    <h1
+                      style={{
+                        gridColumn: 2,
+                        gridRow: 1,
+                        justifySelf: "end",
+                        fontSize: 32,
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        margin: 0,
+                      }}
+                    >
+                      INVOICE
+                    </h1>
+                    <div
+                      style={{
+                        gridColumn: 2,
+                        gridRow: 2,
+                        justifySelf: "end",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        width: 260,
+                      }}
+                    >
+                      <InfoRow label="INVOICE #:" value={invoiceNo} />
+                      <InfoRow label="DATE:" value={formattedDate} center />
+                    </div>
+                    <div style={{ gridColumn: 1, gridRow: 3, fontSize: 11 }}>
+                      <div style={{ fontWeight: 700, marginBottom: 4 }}>{settings.companyName}</div>
+                      {settings.contactPerson ? <div>{settings.contactPerson}</div> : null}
+                      {companyAddress
+                        ? companyAddress.split("\n").map((line, i) => <div key={i}>{line}</div>)
+                        : null}
+                      <div style={{ marginTop: 4 }}>
+                        <b>Email:</b> &nbsp;{email}
                       </div>
+                      <div>
+                        <b>Cell:</b> &nbsp;&nbsp;&nbsp;{cell}
+                      </div>
+                      {settings.vatNumber ? (
+                        <div>
+                          <b>VAT:</b> &nbsp;&nbsp;{settings.vatNumber}
+                        </div>
+                      ) : null}
+                      {settings.businessRegistration ? (
+                        <div>
+                          <b>Reg:</b> &nbsp;&nbsp;{settings.businessRegistration}
+                        </div>
+                      ) : null}
                     </div>
                     <div
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: 16,
-                        flexShrink: 0,
+                        gridColumn: 2,
+                        gridRow: 3,
+                        justifySelf: "end",
+                        width: 260,
+                        border: "1px solid #a3a3a3",
+                        borderRadius: 6,
+                        padding: 8,
                       }}
                     >
-                      <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: 1, margin: 0 }}>
-                        INVOICE
-                      </h1>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: 260 }}>
-                        <InfoRow label="INVOICE #:" value={invoiceNo} />
-                        <InfoRow label="DATE:" value={formattedDate} center />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bill to */}
-                  <div
-                    style={{
-                      marginTop: 16,
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 24,
-                    }}
-                  >
-                    <div />
-                    <div style={{ border: "1px solid #a3a3a3", borderRadius: 6, padding: 8 }}>
                       <div className="font-bold">BILL TO:</div>
                       <div>{billToName}</div>
                       <div>{billToPhone}</div>
