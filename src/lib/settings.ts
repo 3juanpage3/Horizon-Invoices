@@ -48,8 +48,8 @@ export const DEFAULT_SETTINGS: CompanySettings = {
   logo: undefined,
   defaultTerms: DEFAULT_TERMS_LINES.join("\n"),
   defaultLineItemDescription: " (Item description)",
-  defaultLineItemQty: 1,
-  defaultLineItemUnitPrice: 275,
+  defaultLineItemQty: 0,
+  defaultLineItemUnitPrice: 0,
 };
 
 export function getDefaultLineItems(settings: CompanySettings): DefaultLineItem[] {
