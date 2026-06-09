@@ -30,7 +30,7 @@ export type AuthUser = {
 };
 
 const DEFAULT_TERMS_LINES = [
-  "The client has read this and understands the conditions from {companyName}",
+  "The client has read this and understands the conditions from {{companyName}}",
 ];
 
 export const DEFAULT_SETTINGS: CompanySettings = {
