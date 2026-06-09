@@ -676,8 +676,7 @@ function Index() {
                       ))}
                     </div>
                     <p style={{ marginTop: 8, marginBottom: 0 }}>
-                      The client has read this and understands the conditions from K &amp; H Jumping
-                      Castles
+                      The client has read this and understands the conditions from {settings.companyName}
                     </p>
                   </div>
 
