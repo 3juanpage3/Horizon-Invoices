@@ -664,9 +664,6 @@ function Index() {
                         </div>
                       ))}
                     </div>
-                    <p style={{ marginTop: 8, marginBottom: 0 }}>
-                      The client has read this and understands the conditions from {settings.companyName}
-                    </p>
                   </div>
 
                   {/* Signatures */}
