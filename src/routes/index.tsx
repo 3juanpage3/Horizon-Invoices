@@ -452,49 +452,62 @@ function Index() {
                       display: "flex",
                       alignItems: "flex-start",
                       justifyContent: "space-between",
-                    }}
-                  >
-                    <img src={displayLogo} alt={settings.companyName} style={{ height: 90 }} />
-                    <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: 1, margin: 0 }}>
-                      INVOICE
-                    </h1>
-                  </div>
-
-                  {/* Top info row */}
-                  <div
-                    style={{
-                      marginTop: 16,
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
                       gap: 24,
                     }}
                   >
-                    <div style={{ fontSize: 11 }}>
-                      <div style={{ fontWeight: 700, marginBottom: 4 }}>{settings.companyName}</div>
-                      {settings.contactPerson ? <div>{settings.contactPerson}</div> : null}
-                      {companyAddress
-                        ? companyAddress.split("\n").map((line, i) => <div key={i}>{line}</div>)
-                        : null}
-                      <div style={{ marginTop: 4 }}>
-                        <b>Email:</b> &nbsp;{email}
-                      </div>
-                      <div>
-                        <b>Cell:</b> &nbsp;&nbsp;&nbsp;{cell}
-                      </div>
-                      {settings.vatNumber ? (
-                        <div>
-                          <b>VAT:</b> &nbsp;&nbsp;{settings.vatNumber}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+                      <img
+                        src={displayLogo}
+                        alt={settings.companyName}
+                        style={{
+                          display: "block",
+                          height: 130,
+                          width: "auto",
+                          maxWidth: 220,
+                          objectFit: "contain",
+                          objectPosition: "left center",
+                        }}
+                      />
+                      <div style={{ fontSize: 11 }}>
+                        <div style={{ fontWeight: 700, marginBottom: 4 }}>{settings.companyName}</div>
+                        {settings.contactPerson ? <div>{settings.contactPerson}</div> : null}
+                        {companyAddress
+                          ? companyAddress.split("\n").map((line, i) => <div key={i}>{line}</div>)
+                          : null}
+                        <div style={{ marginTop: 4 }}>
+                          <b>Email:</b> &nbsp;{email}
                         </div>
-                      ) : null}
-                      {settings.businessRegistration ? (
                         <div>
-                          <b>Reg:</b> &nbsp;&nbsp;{settings.businessRegistration}
+                          <b>Cell:</b> &nbsp;&nbsp;&nbsp;{cell}
                         </div>
-                      ) : null}
+                        {settings.vatNumber ? (
+                          <div>
+                            <b>VAT:</b> &nbsp;&nbsp;{settings.vatNumber}
+                          </div>
+                        ) : null}
+                        {settings.businessRegistration ? (
+                          <div>
+                            <b>Reg:</b> &nbsp;&nbsp;{settings.businessRegistration}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <InfoRow label="INVOICE #:" value={invoiceNo} />
-                      <InfoRow label="DATE:" value={formattedDate} center />
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        gap: 16,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: 1, margin: 0 }}>
+                        INVOICE
+                      </h1>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: 260 }}>
+                        <InfoRow label="INVOICE #:" value={invoiceNo} />
+                        <InfoRow label="DATE:" value={formattedDate} center />
+                      </div>
                     </div>
                   </div>
 
@@ -635,18 +648,25 @@ function Index() {
                   ) : null}
 
                   {/* Terms */}
-                  <div className="mt-6">
-                    <h2 style={{ fontWeight: 700, textDecoration: "underline", fontSize: 13 }}>
+                  <div style={{ marginTop: 24 }}>
+                    <h2
+                      style={{
+                        fontWeight: 700,
+                        textDecoration: "underline",
+                        fontSize: 13,
+                        margin: 0,
+                      }}
+                    >
                       GENERAL TERMS &amp; CONDITIONS
                     </h2>
-                    <ol style={{ paddingLeft: 20, marginTop: 6 }}>
+                    <div style={{ marginTop: 6 }}>
                       {termsList.map((t, i) => (
-                        <li key={i} style={{ marginBottom: 2 }}>
-                          <span style={{ marginLeft: -4 }}>{t}</span>
-                        </li>
+                        <div key={i} style={{ marginBottom: 2 }}>
+                          {t}
+                        </div>
                       ))}
-                    </ol>
-                    <p className="mt-2">
+                    </div>
+                    <p style={{ marginTop: 8, marginBottom: 0 }}>
                       The client has read this and understands the conditions from K &amp; H Jumping
                       Castles
                     </p>
