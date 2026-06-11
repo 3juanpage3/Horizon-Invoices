@@ -7,6 +7,7 @@ export type CompanySettings = {
   city: string;
   postalCode: string;
   country: string;
+  website: string;
   vatNumber: string;
   businessRegistration: string;
   bankDetails?: string;
@@ -42,6 +43,7 @@ export const DEFAULT_SETTINGS: CompanySettings = {
   city: "",
   postalCode: "",
   country: "",
+  website: "",
   vatNumber: "",
   businessRegistration: "",
   bankDetails: "",

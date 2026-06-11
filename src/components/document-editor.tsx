@@ -119,6 +119,7 @@ export function DocumentEditor({
     settings.address,
     [settings.city, settings.postalCode].filter(Boolean).join(", "),
     settings.country,
+    settings.website,
   ]
     .filter(Boolean)
     .join("\n");

@@ -165,6 +165,16 @@ function Setup() {
                     onChange={(e) => update("country", e.target.value)}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="website">Website</Label>
+                  <Input
+                    id="website"
+                    type="url"
+                    placeholder="https://example.com"
+                    value={form.website}
+                    onChange={(e) => update("website", e.target.value)}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

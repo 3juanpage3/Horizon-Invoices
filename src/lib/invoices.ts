@@ -75,10 +75,20 @@ export function searchInvoices(invoices: SavedInvoice[], query: string): SavedIn
   });
 }
 
-export function formatDisplayDate(isoDate: string) {
-  if (!isoDate) return "";
-  const [y, m, d] = isoDate.split("-");
-  if (!y || !m || !d) return isoDate;
+export function formatDisplayDate(isoDate: string | null | undefined) {
+  // 1. Force catch the exact string you are seeing on the screen
+  if (!isoDate || isoDate.trim() === "" || isoDate === "undefined-undefined-Date") {
+    return "Date";
+  }
+
+  const parts = isoDate.split("-");
+  if (parts.length !== 3) return "Date";
+
+  const [y, m, d] = parts;
+  if (!y || !m || !d || y === "undefined" || m === "undefined" || d === "undefined") {
+    return "Date";
+  }
+
   return `${d}-${m}-${y}`;
 }
 

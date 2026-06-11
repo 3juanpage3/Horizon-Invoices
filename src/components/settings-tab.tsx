@@ -102,62 +102,78 @@ export function SettingsTab() {
                   id="phone"
                   value={settings.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+27 (000) 000-0000"
                 />
               </div>
+
+
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Address</CardTitle>
-            <CardDescription>Enter your business address</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="address">Street Address</Label>
-              <Input
-                id="address"
-                value={settings.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
-                placeholder="123 Main Street"
-              />
-            </div>
+  <CardHeader>
+    <CardTitle>Address</CardTitle>
+    <CardDescription>Enter your business address</CardDescription>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    {/* Street Address - Full Width */}
+    <div className="space-y-2">
+      <Label htmlFor="address">Street Address</Label>
+      <Input
+        id="address"
+        value={settings.address}
+        onChange={(e) => handleInputChange("address", e.target.value)}
+        placeholder="123 Main Street"
+      />
+    </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={settings.city}
-                  onChange={(e) => handleInputChange("city", e.target.value)}
-                  placeholder="City"
-                />
-              </div>
+    {/* 3-Column Grid for short address fields */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="space-y-2">
+        <Label htmlFor="city">City</Label>
+        <Input
+          id="city"
+          value={settings.city}
+          onChange={(e) => handleInputChange("city", e.target.value)}
+          placeholder="City"
+        />
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="postalCode">Postal Code</Label>
-                <Input
-                  id="postalCode"
-                  value={settings.postalCode}
-                  onChange={(e) => handleInputChange("postalCode", e.target.value)}
-                  placeholder="00000"
-                />
-              </div>
+      <div className="space-y-2">
+        <Label htmlFor="postalCode">Postal Code</Label>
+        <Input
+          id="postalCode"
+          value={settings.postalCode}
+          onChange={(e) => handleInputChange("postalCode", e.target.value)}
+          placeholder="00000"
+        />
+      </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={settings.country}
-                  onChange={(e) => handleInputChange("country", e.target.value)}
-                  placeholder="Country"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-2">
+        <Label htmlFor="country">Country</Label>
+        <Input
+          id="country"
+          value={settings.country}
+          onChange={(e) => handleInputChange("country", e.target.value)}
+          placeholder="Country"
+        />
+      </div>
+    </div>
+
+    {/* Website field safely inside CardContent at full-width */}
+    <div className="space-y-2">
+      <Label htmlFor="website">Website</Label>
+      <Input
+        id="website"
+        type="url"
+        value={settings.website}
+        onChange={(e) => handleInputChange("website", e.target.value)}
+        placeholder="https://www.example.com"
+      />
+    </div>
+  </CardContent>
+</Card>
 
         <Card>
           <CardHeader>

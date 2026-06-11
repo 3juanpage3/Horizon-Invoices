@@ -25,6 +25,7 @@ export function useCompanySettings() {
         city: query.data.city,
         postalCode: query.data.postalCode,
         country: query.data.country,
+        website: query.data.website,  
         vatNumber: query.data.vatNumber,
         businessRegistration: query.data.businessRegistration,
         bankDetails: query.data.bankDetails,

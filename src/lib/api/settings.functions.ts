@@ -25,6 +25,7 @@ export const getCompanySettings = createServerFn({ method: "GET" }).handler(asyn
     city: (company.city as string) ?? "",
     postalCode: (company.postalCode as string) ?? "",
     country: (company.country as string) ?? "",
+    website: (company.website as string) ?? "",
     vatNumber: (company.vatNumber as string) ?? "",
     businessRegistration: (company.businessRegistration as string) ?? "",
     bankDetails: (company.bankDetails as string) ?? "",

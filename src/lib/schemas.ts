@@ -9,6 +9,7 @@ export const companySettingsSchema = z.object({
   city: z.string().optional().default(""),
   postalCode: z.string().optional().default(""),
   country: z.string().optional().default(""),
+  website: z.string().optional().default(""),
   vatNumber: z.string().optional().default(""),
   businessRegistration: z.string().optional().default(""),
   bankDetails: z.string().optional().default(""),
