@@ -1,19 +1,9 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, type RefObject } from "react";
 import logoAsset from "@/assets/main-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, Download, Package, Settings, LogOut, History, Save, FilePlus } from "lucide-react";
+import { Download, Package, Settings, LogOut, History, Save, FilePlus, FileText } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useInventory } from "@/lib/inventory";
 import { useAuth } from "@/lib/use-auth";
 import { useCompanySettings } from "@/lib/use-company-settings";
@@ -22,7 +12,10 @@ import { loadSession } from "@/lib/load-session";
 import { InventoryTab } from "@/components/inventory-tab";
 import { SettingsTab } from "@/components/settings-tab";
 import { HistoryTab } from "@/components/history-tab";
+import { QuoteHistoryTab } from "@/components/quote-history-tab";
+import { DocumentEditor, type LineItem } from "@/components/document-editor";
 import { useInvoiceHistory, type SavedInvoice } from "@/lib/invoices";
+import { useQuoteHistory, type SavedQuote } from "@/lib/quotes";
 
 const logo = logoAsset.url;
 
@@ -38,83 +31,89 @@ export const Route = createFileRoute("/")({
       { title: "Horizon Invoices" },
       {
         name: "description",
-        content: "Create and download professional invoices with Horizon Invoices.",
+        content: "Create and download professional invoices and quotes with Horizon Invoices.",
       },
       { property: "og:title", content: "Horizon Invoices" },
       {
         property: "og:description",
-        content: "Create and download professional invoices with Horizon Invoices.",
+        content: "Create and download professional invoices and quotes with Horizon Invoices.",
       },
     ],
   }),
   component: Index,
 });
 
-type LineItem = { id: string; description: string; qty: number; unitPrice: number };
-
 const uid = () => Math.random().toString(36).slice(2, 9);
-const fmt = (n: number) => n.toFixed(2);
 
 const toLineItems = (settings: CompanySettings): LineItem[] =>
   getDefaultLineItems(settings).map((item) => ({ id: uid(), ...item }));
+
+type AppTab = "invoice" | "quote" | "history" | "quote-history" | "inventory" | "settings";
 
 function Index() {
   const navigate = useNavigate();
   const { user, logout, isLoading: authLoading } = useAuth();
   const { settings, isLoading: settingsLoading } = useCompanySettings();
+
   const [invoiceNo, setInvoiceNo] = useState("Invoice #");
-  const [date, setDate] = useState("Date");
-  const [email, setEmail] = useState(settings.email || "email");
-  const [cell, setCell] = useState(settings.phone || " cell");
-  const [billToName, setBillToName] = useState("name");
-  const [billToPhone, setBillToPhone] = useState("phone");
-  const [billToAddress, setBillToAddress] = useState("street\n city");
-  const [items, setItems] = useState<LineItem[]>([]);
-  const [terms, setTerms] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState("Date");
+  const [invoiceEmail, setInvoiceEmail] = useState(settings.email || "email");
+  const [invoiceCell, setInvoiceCell] = useState(settings.phone || " cell");
+  const [invoiceBillToName, setInvoiceBillToName] = useState("name");
+  const [invoiceBillToPhone, setInvoiceBillToPhone] = useState("phone");
+  const [invoiceBillToAddress, setInvoiceBillToAddress] = useState("street\n city");
+  const [invoiceItems, setInvoiceItems] = useState<LineItem[]>([]);
+  const [invoiceTerms, setInvoiceTerms] = useState("");
   const [invoiceDefaultsApplied, setInvoiceDefaultsApplied] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
-  const [exporting, setExporting] = useState(false);
-  const [tab, setTab] = useState<"invoice" | "history" | "inventory" | "settings">("invoice");
+  const invoicePreviewRef = useRef<HTMLDivElement>(null);
+  const [invoiceExporting, setInvoiceExporting] = useState(false);
   const [activeInvoiceId, setActiveInvoiceId] = useState<string | null>(null);
-  const [saveNotice, setSaveNotice] = useState("");
+  const [invoiceSaveNotice, setInvoiceSaveNotice] = useState("");
+
+  const [quoteNo, setQuoteNo] = useState("Quote #");
+  const [quoteDate, setQuoteDate] = useState("Date");
+  const [quoteEmail, setQuoteEmail] = useState(settings.email || "email");
+  const [quoteCell, setQuoteCell] = useState(settings.phone || " cell");
+  const [quoteBillToName, setQuoteBillToName] = useState("name");
+  const [quoteBillToPhone, setQuoteBillToPhone] = useState("phone");
+  const [quoteBillToAddress, setQuoteBillToAddress] = useState("street\n city");
+  const [quoteItems, setQuoteItems] = useState<LineItem[]>([]);
+  const [quoteTerms, setQuoteTerms] = useState("");
+  const [quoteDefaultsApplied, setQuoteDefaultsApplied] = useState(false);
+  const quotePreviewRef = useRef<HTMLDivElement>(null);
+  const [quoteExporting, setQuoteExporting] = useState(false);
+  const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
+  const [quoteSaveNotice, setQuoteSaveNotice] = useState("");
+
+  const [tab, setTab] = useState<AppTab>("invoice");
   const { items: inventory } = useInventory();
   const { invoices, saveInvoice, deleteInvoice } = useInvoiceHistory();
+  const { quotes, saveQuote, deleteQuote } = useQuoteHistory();
 
-  // Update email and phone from settings
   useEffect(() => {
-    if (settings.email) setEmail(settings.email);
-    if (settings.phone) setCell(settings.phone);
+    if (settings.email) {
+      setInvoiceEmail(settings.email);
+      setQuoteEmail(settings.email);
+    }
+    if (settings.phone) {
+      setInvoiceCell(settings.phone);
+      setQuoteCell(settings.phone);
+    }
   }, [settings.email, settings.phone]);
 
   useEffect(() => {
     if (settingsLoading || invoiceDefaultsApplied || activeInvoiceId) return;
-    setItems(toLineItems(settings));
-    setTerms(settings.defaultTerms);
+    setInvoiceItems(toLineItems(settings));
+    setInvoiceTerms(settings.defaultTerms);
     setInvoiceDefaultsApplied(true);
   }, [settingsLoading, settings, invoiceDefaultsApplied, activeInvoiceId]);
 
-  const total = useMemo(() => items.reduce((s, it) => s + it.qty * it.unitPrice, 0), [items]);
-
-  const formattedDate = useMemo(() => {
-    if (!date) return "";
-    const [y, m, d] = date.split("-");
-    return `${d}-${m}-${y}`;
-  }, [date]);
-
-  const termsList = terms
-    .split("\n")
-    .map((t) => t.trim())
-    .filter(Boolean);
-
-  const displayLogo = settings.logo || logo;
-
-  const companyAddress = [
-    settings.address,
-    [settings.city, settings.postalCode].filter(Boolean).join(", "),
-    settings.country,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  useEffect(() => {
+    if (settingsLoading || quoteDefaultsApplied || activeQuoteId) return;
+    setQuoteItems(toLineItems(settings));
+    setQuoteTerms(settings.defaultTerms);
+    setQuoteDefaultsApplied(true);
+  }, [settingsLoading, settings, quoteDefaultsApplied, activeQuoteId]);
 
   const handleLogout = async () => {
     await logout();
@@ -129,30 +128,56 @@ function Index() {
     );
   }
 
-  const addFromInventory = (invId: string) => {
+  const displayLogo = settings.logo || logo;
+
+  const addFromInventoryToInvoice = (invId: string) => {
     const inv = inventory.find((x) => x.id === invId);
     if (!inv) return;
-    setItems((p) => [
+    setInvoiceItems((p) => [
       ...p,
       { id: uid(), description: inv.description || inv.name, qty: 1, unitPrice: inv.unitPrice },
     ]);
   };
 
-  const updateItem = (id: string, patch: Partial<LineItem>) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const addFromInventoryToQuote = (invId: string) => {
+    const inv = inventory.find((x) => x.id === invId);
+    if (!inv) return;
+    setQuoteItems((p) => [
+      ...p,
+      { id: uid(), description: inv.description || inv.name, qty: 1, unitPrice: inv.unitPrice },
+    ]);
+  };
+
+  const invoiceTotal = invoiceItems.reduce((s, it) => s + it.qty * it.unitPrice, 0);
+  const quoteTotal = quoteItems.reduce((s, it) => s + it.qty * it.unitPrice, 0);
 
   const buildSavedInvoice = (): SavedInvoice => ({
     id: activeInvoiceId ?? uid(),
     invoiceNo,
-    date,
-    email,
-    cell,
-    billToName,
-    billToPhone,
-    billToAddress,
-    items,
-    terms,
-    total,
+    date: invoiceDate,
+    email: invoiceEmail,
+    cell: invoiceCell,
+    billToName: invoiceBillToName,
+    billToPhone: invoiceBillToPhone,
+    billToAddress: invoiceBillToAddress,
+    items: invoiceItems,
+    terms: invoiceTerms,
+    total: invoiceTotal,
+    savedAt: new Date().toISOString(),
+  });
+
+  const buildSavedQuote = (): SavedQuote => ({
+    id: activeQuoteId ?? uid(),
+    quoteNo,
+    date: quoteDate,
+    email: quoteEmail,
+    cell: quoteCell,
+    billToName: quoteBillToName,
+    billToPhone: quoteBillToPhone,
+    billToAddress: quoteBillToAddress,
+    items: quoteItems,
+    terms: quoteTerms,
+    total: quoteTotal,
     savedAt: new Date().toISOString(),
   });
 
@@ -160,38 +185,96 @@ function Index() {
     const saved = buildSavedInvoice();
     if (!activeInvoiceId) setActiveInvoiceId(saved.id);
     saveInvoice(saved);
-    setSaveNotice("Invoice saved to history.");
-    window.setTimeout(() => setSaveNotice(""), 2500);
+    setInvoiceSaveNotice("Invoice saved to history.");
+    window.setTimeout(() => setInvoiceSaveNotice(""), 2500);
+  };
+
+  const saveCurrentQuote = () => {
+    const saved = buildSavedQuote();
+    if (!activeQuoteId) setActiveQuoteId(saved.id);
+    saveQuote(saved);
+    setQuoteSaveNotice("Quote saved to history.");
+    window.setTimeout(() => setQuoteSaveNotice(""), 2500);
   };
 
   const loadInvoiceFromHistory = (invoice: SavedInvoice) => {
     setActiveInvoiceId(invoice.id);
     setInvoiceNo(invoice.invoiceNo);
-    setDate(invoice.date);
-    setEmail(invoice.email);
-    setCell(invoice.cell);
-    setBillToName(invoice.billToName);
-    setBillToPhone(invoice.billToPhone);
-    setBillToAddress(invoice.billToAddress);
-    setItems(invoice.items);
-    setTerms(invoice.terms);
+    setInvoiceDate(invoice.date);
+    setInvoiceEmail(invoice.email);
+    setInvoiceCell(invoice.cell);
+    setInvoiceBillToName(invoice.billToName);
+    setInvoiceBillToPhone(invoice.billToPhone);
+    setInvoiceBillToAddress(invoice.billToAddress);
+    setInvoiceItems(invoice.items);
+    setInvoiceTerms(invoice.terms);
     setTab("invoice");
+  };
+
+  const loadQuoteFromHistory = (quote: SavedQuote) => {
+    setActiveQuoteId(quote.id);
+    setQuoteNo(quote.quoteNo);
+    setQuoteDate(quote.date);
+    setQuoteEmail(quote.email);
+    setQuoteCell(quote.cell);
+    setQuoteBillToName(quote.billToName);
+    setQuoteBillToPhone(quote.billToPhone);
+    setQuoteBillToAddress(quote.billToAddress);
+    setQuoteItems(quote.items);
+    setQuoteTerms(quote.terms);
+    setTab("quote");
+  };
+
+  const loadQuoteIntoInvoice = (quoteId: string) => {
+    const quote = quotes.find((q) => q.id === quoteId);
+    if (!quote) return;
+    setActiveInvoiceId(null);
+    setInvoiceNo("");
+    setInvoiceDate(new Date().toISOString().slice(0, 10));
+    setInvoiceEmail(quote.email);
+    setInvoiceCell(quote.cell);
+    setInvoiceBillToName(quote.billToName);
+    setInvoiceBillToPhone(quote.billToPhone);
+    setInvoiceBillToAddress(quote.billToAddress);
+    setInvoiceItems(quote.items.map((item) => ({ ...item, id: uid() })));
+    setInvoiceTerms(quote.terms);
+    setInvoiceSaveNotice(`Loaded quote ${quote.quoteNo || "(no number)"} into invoice.`);
+    window.setTimeout(() => setInvoiceSaveNotice(""), 2500);
   };
 
   const startNewInvoice = () => {
     setActiveInvoiceId(null);
     setInvoiceNo("");
-    setDate(new Date().toISOString().slice(0, 10));
-    setEmail(settings.email || "");
-    setCell(settings.phone || "");
-    setBillToName("");
-    setBillToPhone("");
-    setBillToAddress("");
-    setItems(toLineItems(settings));
-    setTerms(settings.defaultTerms);
+    setInvoiceDate(new Date().toISOString().slice(0, 10));
+    setInvoiceEmail(settings.email || "");
+    setInvoiceCell(settings.phone || "");
+    setInvoiceBillToName("");
+    setInvoiceBillToPhone("");
+    setInvoiceBillToAddress("");
+    setInvoiceItems(toLineItems(settings));
+    setInvoiceTerms(settings.defaultTerms);
   };
 
-  const downloadPdf = async () => {
+  const startNewQuote = () => {
+    setActiveQuoteId(null);
+    setQuoteNo("");
+    setQuoteDate(new Date().toISOString().slice(0, 10));
+    setQuoteEmail(settings.email || "");
+    setQuoteCell(settings.phone || "");
+    setQuoteBillToName("");
+    setQuoteBillToPhone("");
+    setQuoteBillToAddress("");
+    setQuoteItems(toLineItems(settings));
+    setQuoteTerms(settings.defaultTerms);
+  };
+
+  const downloadPdf = async (
+    previewRef: RefObject<HTMLDivElement | null>,
+    docNo: string,
+    prefix: "invoice" | "quote",
+    onSave: () => void,
+    setExporting: (v: boolean) => void,
+  ) => {
     if (!previewRef.current) return;
     setExporting(true);
     try {
@@ -211,9 +294,9 @@ function Index() {
       const imgH = (canvas.height * pageW) / canvas.width;
       const h = Math.min(imgH, pageH);
       pdf.addImage(img, "PNG", 0, 0, pageW, h);
-      const safe = invoiceNo.replace(/[^a-z0-9-]+/gi, "-").toLowerCase() || "invoice";
-      pdf.save(`invoice-${safe}.pdf`);
-      saveCurrentInvoice();
+      const safe = docNo.replace(/[^a-z0-9-]+/gi, "-").toLowerCase() || prefix;
+      pdf.save(`${prefix}-${safe}.pdf`);
+      onSave();
     } finally {
       setExporting(false);
     }
@@ -245,9 +328,47 @@ function Index() {
                   <Save className="h-4 w-4" />
                   Save
                 </Button>
-                <Button onClick={downloadPdf} disabled={exporting}>
+                <Button
+                  onClick={() =>
+                    downloadPdf(
+                      invoicePreviewRef,
+                      invoiceNo,
+                      "invoice",
+                      saveCurrentInvoice,
+                      setInvoiceExporting,
+                    )
+                  }
+                  disabled={invoiceExporting}
+                >
                   <Download className="mr-2 h-4 w-4" />
-                  {exporting ? "Generating..." : "Download PDF"}
+                  {invoiceExporting ? "Generating..." : "Download PDF"}
+                </Button>
+              </>
+            ) : null}
+            {tab === "quote" ? (
+              <>
+                <Button variant="outline" onClick={startNewQuote} className="gap-2">
+                  <FilePlus className="h-4 w-4" />
+                  New
+                </Button>
+                <Button variant="outline" onClick={saveCurrentQuote} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  Save
+                </Button>
+                <Button
+                  onClick={() =>
+                    downloadPdf(
+                      quotePreviewRef,
+                      quoteNo,
+                      "quote",
+                      saveCurrentQuote,
+                      setQuoteExporting,
+                    )
+                  }
+                  disabled={quoteExporting}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {quoteExporting ? "Generating..." : "Download PDF"}
                 </Button>
               </>
             ) : null}
@@ -261,13 +382,19 @@ function Index() {
 
       <Tabs
         value={tab}
-        onValueChange={(v) => setTab(v as "invoice" | "history" | "inventory" | "settings")}
+        onValueChange={(v) => setTab(v as AppTab)}
         className="mx-auto w-full max-w-7xl px-4 pt-4"
       >
         <TabsList>
           <TabsTrigger value="invoice">Invoice</TabsTrigger>
+          <TabsTrigger value="quote">
+            <FileText className="mr-1 h-4 w-4" /> Quote
+          </TabsTrigger>
           <TabsTrigger value="history">
-            <History className="mr-1 h-4 w-4" /> History
+            <History className="mr-1 h-4 w-4" /> Invoice History
+          </TabsTrigger>
+          <TabsTrigger value="quote-history">
+            <History className="mr-1 h-4 w-4" /> Quote History
           </TabsTrigger>
           <TabsTrigger value="inventory">
             <Package className="mr-1 h-4 w-4" /> Inventory
@@ -278,416 +405,65 @@ function Index() {
         </TabsList>
 
         <TabsContent value="invoice" className="mt-4">
-          {saveNotice ? (
-            <p className="mb-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-              {saveNotice}
-            </p>
-          ) : null}
-          <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-            {/* FORM */}
-            <aside className="space-y-6">
-              <section className="space-y-3 rounded-lg border bg-background p-4">
-                <h2 className="text-sm font-semibold">Invoice details</h2>
-                <div className="grid gap-2">
-                  <Label>Invoice #</Label>
-                  <Input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Date</Label>
-                  <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-                </div>
-              </section>
+          <DocumentEditor
+            variant="invoice"
+            documentNo={invoiceNo}
+            onDocumentNoChange={setInvoiceNo}
+            date={invoiceDate}
+            onDateChange={setInvoiceDate}
+            email={invoiceEmail}
+            onEmailChange={setInvoiceEmail}
+            cell={invoiceCell}
+            onCellChange={setInvoiceCell}
+            billToName={invoiceBillToName}
+            onBillToNameChange={setInvoiceBillToName}
+            billToPhone={invoiceBillToPhone}
+            onBillToPhoneChange={setInvoiceBillToPhone}
+            billToAddress={invoiceBillToAddress}
+            onBillToAddressChange={setInvoiceBillToAddress}
+            items={invoiceItems}
+            onItemsChange={setInvoiceItems}
+            terms={invoiceTerms}
+            onTermsChange={setInvoiceTerms}
+            settings={settings}
+            inventory={inventory}
+            previewRef={invoicePreviewRef}
+            saveNotice={invoiceSaveNotice}
+            quotes={quotes}
+            onLoadFromQuote={loadQuoteIntoInvoice}
+            onAddFromInventory={addFromInventoryToInvoice}
+            uid={uid}
+          />
+        </TabsContent>
 
-              <section className="space-y-3 rounded-lg border bg-background p-4">
-                <h2 className="text-sm font-semibold">Our contact info</h2>
-                <div className="grid gap-2">
-                  <Label>Email</Label>
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Cell</Label>
-                  <Input value={cell} onChange={(e) => setCell(e.target.value)} />
-                </div>
-              </section>
-
-              <section className="space-y-3 rounded-lg border bg-background p-4">
-                <h2 className="text-sm font-semibold">Bill to</h2>
-                <div className="grid gap-2">
-                  <Label>Name</Label>
-                  <Input value={billToName} onChange={(e) => setBillToName(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Phone</Label>
-                  <Input value={billToPhone} onChange={(e) => setBillToPhone(e.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Address</Label>
-                  <Textarea
-                    rows={2}
-                    value={billToAddress}
-                    onChange={(e) => setBillToAddress(e.target.value)}
-                  />
-                </div>
-              </section>
-
-              <section className="space-y-3 rounded-lg border bg-background p-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold">Line items</h2>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      setItems((p) => [...p, { id: uid(), description: "", qty: 1, unitPrice: 0 }])
-                    }
-                  >
-                    <Plus className="mr-1 h-4 w-4" /> Add
-                  </Button>
-                </div>
-                {inventory.length > 0 && (
-                  <div className="grid gap-2">
-                    <Label className="text-xs">Add from inventory</Label>
-                    <Select value="" onValueChange={(v) => addFromInventory(v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pick a stock item…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {inventory.map((inv) => (
-                          <SelectItem key={inv.id} value={inv.id}>
-                            {inv.name || inv.description || "(untitled)"} — {fmt(inv.unitPrice)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  {items.map((it) => (
-                    <div key={it.id} className="space-y-2 rounded-md border p-3">
-                      <Textarea
-                        rows={2}
-                        placeholder="Description"
-                        value={it.description}
-                        onChange={(e) => updateItem(it.id, { description: e.target.value })}
-                      />
-                      <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-                        <div>
-                          <Label className="text-xs">Qty</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={it.qty}
-                            onChange={(e) =>
-                              updateItem(it.id, { qty: Number(e.target.value) || 0 })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Unit price</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            value={it.unitPrice}
-                            onChange={(e) =>
-                              updateItem(it.id, { unitPrice: Number(e.target.value) || 0 })
-                            }
-                          />
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="self-end"
-                          onClick={() => setItems((p) => p.filter((x) => x.id !== it.id))}
-                          aria-label="Remove"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="space-y-3 rounded-lg border bg-background p-4">
-                <h2 className="text-sm font-semibold">Terms &amp; conditions</h2>
-                <p className="text-xs text-muted-foreground">One per line.</p>
-                <Textarea
-                  rows={10}
-                  value={terms}
-                  onChange={(e) => setTerms(e.target.value)}
-                  className="font-mono text-xs"
-                />
-              </section>
-            </aside>
-
-            {/* PREVIEW */}
-            <main>
-              <div className="overflow-auto rounded-lg border bg-neutral-200 p-4 shadow-inner">
-                <div
-                  ref={previewRef}
-                  className="mx-auto bg-white text-black shadow-md"
-                  style={{
-                    width: "210mm",
-                    minHeight: "297mm",
-                    padding: "14mm 14mm",
-                    fontFamily: "Arial, Helvetica, sans-serif",
-                    fontSize: "11px",
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {/* Header */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      columnGap: 24,
-                      rowGap: 8,
-                      alignItems: "start",
-                    }}
-                  >
-                    <img
-                      src={displayLogo}
-                      alt={settings.companyName}
-                      style={{
-                        display: "block",
-                        gridColumn: 1,
-                        gridRow: "1 / 3",
-                        height: 260,
-                        width: "auto",
-                        maxWidth: 440,
-                        objectFit: "contain",
-                        objectPosition: "left top",
-                      }}
-                    />
-                    <h1
-                      style={{
-                        gridColumn: 2,
-                        gridRow: 1,
-                        justifySelf: "end",
-                        fontSize: 32,
-                        fontWeight: 700,
-                        letterSpacing: 1,
-                        margin: 0,
-                      }}
-                    >
-                      INVOICE
-                    </h1>
-                    <div
-                      style={{
-                        gridColumn: 2,
-                        gridRow: 2,
-                        justifySelf: "end",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                        width: 260,
-                      }}
-                    >
-                      <InfoRow label="INVOICE #:" value={invoiceNo} />
-                      <InfoRow label="DATE:" value={formattedDate} center />
-                    </div>
-                    <div style={{ gridColumn: 1, gridRow: 3, fontSize: 11 }}>
-                      <div style={{ fontWeight: 700, marginBottom: 4 }}>{settings.companyName}</div>
-                      {settings.contactPerson ? <div>{settings.contactPerson}</div> : null}
-                      {companyAddress
-                        ? companyAddress.split("\n").map((line, i) => <div key={i}>{line}</div>)
-                        : null}
-                      <div style={{ marginTop: 4 }}>
-                        <b>Email:</b> &nbsp;{email}
-                      </div>
-                      <div>
-                        <b>Cell:</b> &nbsp;&nbsp;&nbsp;{cell}
-                      </div>
-                      {settings.vatNumber ? (
-                        <div>
-                          <b>VAT:</b> &nbsp;&nbsp;{settings.vatNumber}
-                        </div>
-                      ) : null}
-                      {settings.businessRegistration ? (
-                        <div>
-                          <b>Reg:</b> &nbsp;&nbsp;{settings.businessRegistration}
-                        </div>
-                      ) : null}
-                    </div>
-                    <div
-                      style={{
-                        gridColumn: 2,
-                        gridRow: 3,
-                        justifySelf: "end",
-                        width: 260,
-                        border: "1px solid #a3a3a3",
-                        borderRadius: 6,
-                        padding: 8,
-                      }}
-                    >
-                      <div className="font-bold">BILL TO:</div>
-                      <div>{billToName}</div>
-                      <div>{billToPhone}</div>
-                      {billToAddress.split("\n").map((l, i) => (
-                        <div key={i}>{l}</div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Items table */}
-                  <div style={{ marginTop: 24 }}>
-                    <div
-                      className="text-center font-bold"
-                      style={{
-                        display: "grid",
-                        alignItems: "center",
-                        gridTemplateColumns: "1.8fr 0.5fr 0.7fr 0.7fr",
-                        background: "#cfe3f0",
-                        border: "1px solid #9ec6db",
-                        padding: "8px 0",
-                        gap: 0,
-                      }}
-                    >
-                      <div>DESCRIPTION</div>
-                      <div style={{ borderLeft: "1px solid #9ec6db" }}>QTY</div>
-                      <div style={{ borderLeft: "1px solid #9ec6db" }}>UNIT PRICE</div>
-                      <div style={{ borderLeft: "1px solid #9ec6db" }}>AMOUNT</div>
-                    </div>
-                    <div className="mt-2 space-y-2">
-                      {items.map((it) => (
-                        <div
-                          key={it.id}
-                          style={{
-                            display: "grid",
-                            alignItems: "center",
-                            gridTemplateColumns: "1.8fr 0.5fr 0.7fr 0.7fr",
-                            border: "1px solid #cfd6db",
-                            minHeight: 48,
-                          }}
-                        >
-                          <div style={{ padding: "8px 10px" }}>{it.description}</div>
-                          <div
-                            style={{
-                              borderLeft: "1px solid #cfd6db",
-                              textAlign: "center",
-                              padding: 6,
-                            }}
-                          >
-                            {it.qty}
-                          </div>
-                          <div
-                            style={{
-                              borderLeft: "1px solid #cfd6db",
-                              textAlign: "center",
-                              padding: 6,
-                            }}
-                          >
-                            {fmt(it.unitPrice)}
-                          </div>
-                          <div
-                            style={{
-                              borderLeft: "1px solid #cfd6db",
-                              textAlign: "center",
-                              padding: 6,
-                            }}
-                          >
-                            {fmt(it.qty * it.unitPrice)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Total */}
-                    <div
-                      style={{
-                        marginTop: 16,
-                        display: "grid",
-                        alignItems: "center",
-                        gridTemplateColumns: "1.8fr 1.9fr",
-                      }}
-                    >
-                      <div className="italic text-center" style={{ fontSize: 12 }}>
-                        Thank you for your business!
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          border: "1px solid #9ec6db",
-                          borderRadius: 6,
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            background: "#cfe3f0",
-                            textAlign: "center",
-                            padding: "8px 0",
-                            fontWeight: 700,
-                          }}
-                        >
-                          TOTAL
-                        </div>
-                        <div
-                          style={{
-                            textAlign: "center",
-                            padding: "8px 0",
-                            borderLeft: "1px solid #9ec6db",
-                          }}
-                        >
-                          {fmt(total)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {settings.bankDetails ? (
-                    <div style={{ marginTop: 16, fontSize: 11 }}>
-                      <div style={{ fontWeight: 700, marginBottom: 4 }}>Bank Details:</div>
-                      {settings.bankDetails.split("\n").map((line, i) => (
-                        <div key={i}>{line}</div>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {/* Terms */}
-                  <div style={{ marginTop: 24 }}>
-                    <h2
-                      style={{
-                        fontWeight: 700,
-                        textDecoration: "underline",
-                        fontSize: 13,
-                        margin: 0,
-                      }}
-                    >
-                      GENERAL TERMS &amp; CONDITIONS
-                    </h2>
-                    <div style={{ marginTop: 6 }}>
-                      {termsList.map((t, i) => (
-                        <div key={i} style={{ marginBottom: 2 }}>
-                          {t}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Signatures */}
-                  <div
-                    style={{
-                      marginTop: 32,
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 40,
-                    }}
-                  >
-                    <div>
-                      <div style={{ borderBottom: "1px solid #9aa3ab", height: 36 }} />
-                      <div className="mt-1">The Client</div>
-                    </div>
-                    <div>
-                      <div style={{ borderBottom: "1px solid #9aa3ab", height: 36 }} />
-                      <div className="mt-1">{settings.companyName}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </main>
-          </div>
+        <TabsContent value="quote" className="mt-4">
+          <DocumentEditor
+            variant="quote"
+            documentNo={quoteNo}
+            onDocumentNoChange={setQuoteNo}
+            date={quoteDate}
+            onDateChange={setQuoteDate}
+            email={quoteEmail}
+            onEmailChange={setQuoteEmail}
+            cell={quoteCell}
+            onCellChange={setQuoteCell}
+            billToName={quoteBillToName}
+            onBillToNameChange={setQuoteBillToName}
+            billToPhone={quoteBillToPhone}
+            onBillToPhoneChange={setQuoteBillToPhone}
+            billToAddress={quoteBillToAddress}
+            onBillToAddressChange={setQuoteBillToAddress}
+            items={quoteItems}
+            onItemsChange={setQuoteItems}
+            terms={quoteTerms}
+            onTermsChange={setQuoteTerms}
+            settings={settings}
+            inventory={inventory}
+            previewRef={quotePreviewRef}
+            saveNotice={quoteSaveNotice}
+            onAddFromInventory={addFromInventoryToQuote}
+            uid={uid}
+          />
         </TabsContent>
 
         <TabsContent value="history" className="mt-4 pb-10">
@@ -698,6 +474,19 @@ function Index() {
               onDelete={(id) => {
                 deleteInvoice(id);
                 if (activeInvoiceId === id) setActiveInvoiceId(null);
+              }}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="quote-history" className="mt-4 pb-10">
+          <div className="rounded-lg border bg-background">
+            <QuoteHistoryTab
+              quotes={quotes}
+              onLoad={loadQuoteFromHistory}
+              onDelete={(id) => {
+                deleteQuote(id);
+                if (activeQuoteId === id) setActiveQuoteId(null);
               }}
             />
           </div>
@@ -715,31 +504,6 @@ function Index() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function InfoRow({ label, value, center }: { label: string; value: string; center?: boolean }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "110px 1fr",
-        border: "1px solid #9ec6db",
-        borderRadius: 6,
-        overflow: "hidden",
-      }}
-    >
-      <div style={{ background: "#cfe3f0", padding: "6px 8px", fontWeight: 700 }}>{label}</div>
-      <div
-        style={{
-          padding: "6px 8px",
-          borderLeft: "1px solid #9ec6db",
-          textAlign: center ? "center" : "left",
-        }}
-      >
-        {value}
-      </div>
     </div>
   );
 }

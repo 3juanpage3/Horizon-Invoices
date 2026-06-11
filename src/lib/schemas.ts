@@ -48,4 +48,19 @@ export const savedInvoiceSchema = z.object({
   savedAt: z.string(),
 });
 
+export const savedQuoteSchema = z.object({
+  id: z.string(),
+  quoteNo: z.string(),
+  date: z.string(),
+  email: z.string(),
+  cell: z.string(),
+  billToName: z.string(),
+  billToPhone: z.string(),
+  billToAddress: z.string(),
+  items: z.array(invoiceLineItemSchema),
+  terms: z.string(),
+  total: z.number(),
+  savedAt: z.string(),
+});
+
 export type CompanySettingsInput = z.infer<typeof companySettingsSchema>;
