@@ -2,7 +2,16 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useRef, useState, useEffect, type RefObject } from "react";
 import logoAsset from "@/assets/main-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
-import { Download, Package, Settings, LogOut, History, Save, FilePlus, FileText } from "lucide-react";
+import {
+  Download,
+  Package,
+  Settings,
+  LogOut,
+  History,
+  Save,
+  FilePlus,
+  FileText,
+} from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useInventory } from "@/lib/inventory";
 import { useAuth } from "@/lib/use-auth";
@@ -424,7 +433,6 @@ function Index() {
             items={invoiceItems}
             onItemsChange={setInvoiceItems}
             terms={invoiceTerms}
-            onTermsChange={setInvoiceTerms}
             settings={settings}
             inventory={inventory}
             previewRef={invoicePreviewRef}
@@ -456,7 +464,6 @@ function Index() {
             items={quoteItems}
             onItemsChange={setQuoteItems}
             terms={quoteTerms}
-            onTermsChange={setQuoteTerms}
             settings={settings}
             inventory={inventory}
             previewRef={quotePreviewRef}

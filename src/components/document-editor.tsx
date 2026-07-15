@@ -56,7 +56,6 @@ type DocumentEditorProps = {
   items: LineItem[];
   onItemsChange: (items: LineItem[]) => void;
   terms: string;
-  onTermsChange: (value: string) => void;
   settings: CompanySettings;
   inventory: InventoryItem[];
   previewRef: RefObject<HTMLDivElement | null>;
@@ -88,7 +87,6 @@ export function DocumentEditor({
   items,
   onItemsChange,
   terms,
-  onTermsChange,
   settings,
   inventory,
   previewRef,
@@ -272,17 +270,6 @@ export function DocumentEditor({
                 </div>
               ))}
             </div>
-          </section>
-
-          <section className="space-y-3 rounded-lg border bg-background p-4">
-            <h2 className="text-sm font-semibold">Terms &amp; conditions</h2>
-            <p className="text-xs text-muted-foreground">One per line.</p>
-            <Textarea
-              rows={10}
-              value={terms}
-              onChange={(e) => onTermsChange(e.target.value)}
-              className="font-mono text-xs"
-            />
           </section>
         </aside>
 
