@@ -78,6 +78,7 @@ function Index() {
   const [invoiceExporting, setInvoiceExporting] = useState(false);
   const [activeInvoiceId, setActiveInvoiceId] = useState<string | null>(null);
   const [invoiceSaveNotice, setInvoiceSaveNotice] = useState("");
+  const invoiceTermsRef = useRef(settings.defaultTerms);
 
   const [quoteNo, setQuoteNo] = useState("Quote #");
   const [quoteDate, setQuoteDate] = useState("Date");
@@ -93,6 +94,7 @@ function Index() {
   const [quoteExporting, setQuoteExporting] = useState(false);
   const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
   const [quoteSaveNotice, setQuoteSaveNotice] = useState("");
+  const quoteTermsRef = useRef(settings.defaultTerms);
 
   const [tab, setTab] = useState<AppTab>("invoice");
   const { items: inventory } = useInventory();
@@ -114,6 +116,7 @@ function Index() {
     if (settingsLoading || invoiceDefaultsApplied || activeInvoiceId) return;
     setInvoiceItems(toLineItems(settings));
     setInvoiceTerms(settings.defaultTerms);
+    invoiceTermsRef.current = settings.defaultTerms;
     setInvoiceDefaultsApplied(true);
   }, [settingsLoading, settings, invoiceDefaultsApplied, activeInvoiceId]);
 
@@ -121,8 +124,21 @@ function Index() {
     if (settingsLoading || quoteDefaultsApplied || activeQuoteId) return;
     setQuoteItems(toLineItems(settings));
     setQuoteTerms(settings.defaultTerms);
+    quoteTermsRef.current = settings.defaultTerms;
     setQuoteDefaultsApplied(true);
   }, [settingsLoading, settings, quoteDefaultsApplied, activeQuoteId]);
+
+  useEffect(() => {
+    if (settingsLoading) return;
+    if (!activeInvoiceId) {
+      setInvoiceTerms(settings.defaultTerms);
+      invoiceTermsRef.current = settings.defaultTerms;
+    }
+    if (!activeQuoteId) {
+      setQuoteTerms(settings.defaultTerms);
+      quoteTermsRef.current = settings.defaultTerms;
+    }
+  }, [settingsLoading, settings.defaultTerms, activeInvoiceId, activeQuoteId]);
 
   const handleLogout = async () => {
     await logout();
