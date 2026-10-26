@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";
 import { useRef, useState, useEffect, type RefObject } from "react";
 import logoAsset from "@/assets/main-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import { useInventory } from "@/lib/inventory";
 import { useAuth } from "@/lib/use-auth";
 import { useCompanySettings } from "@/lib/use-company-settings";
 import { getDefaultLineItems, type CompanySettings } from "@/lib/settings";
-import { loadSession } from "@/lib/load-session";
 import { InventoryTab } from "@/components/inventory-tab";
 import { SettingsTab } from "@/components/settings-tab";
 import { HistoryTab } from "@/components/history-tab";
@@ -28,30 +27,6 @@ import { useQuoteHistory, type SavedQuote } from "@/lib/quotes";
 
 const logo = logoAsset.url;
 
-export const Route = createFileRoute("/")({
-  loader: async () => {
-    const session = await loadSession();
-    if (!session.user) throw redirect({ to: "/login" });
-    if (!session.hasCompany) throw redirect({ to: "/setup" });
-    return session;
-  },
-  head: () => ({
-    meta: [
-      { title: "Horizon Invoices" },
-      {
-        name: "description",
-        content: "Create and download professional invoices and quotes with Horizon Invoices.",
-      },
-      { property: "og:title", content: "Horizon Invoices" },
-      {
-        property: "og:description",
-        content: "Create and download professional invoices and quotes with Horizon Invoices.",
-      },
-    ],
-  }),
-  component: Index,
-});
-
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 const toLineItems = (settings: CompanySettings): LineItem[] =>
@@ -59,10 +34,14 @@ const toLineItems = (settings: CompanySettings): LineItem[] =>
 
 type AppTab = "invoice" | "quote" | "history" | "quote-history" | "inventory" | "settings";
 
-function Index() {
+export default function Index() {
   const navigate = useNavigate();
-  const { user, logout, isLoading: authLoading } = useAuth();
+  const { user, hasCompany, logout, isLoading: authLoading } = useAuth();
   const { settings, isLoading: settingsLoading } = useCompanySettings();
+
+  useEffect(() => {
+    document.title = "Horizon Invoices";
+  }, []);
 
   const [invoiceNo, setInvoiceNo] = useState("Invoice #");
   const [invoiceDate, setInvoiceDate] = useState("Date");
@@ -100,6 +79,12 @@ function Index() {
   const { items: inventory } = useInventory();
   const { invoices, saveInvoice, deleteInvoice } = useInvoiceHistory();
   const { quotes, saveQuote, deleteQuote } = useQuoteHistory();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) navigate("/login", { replace: true });
+    else if (!hasCompany) navigate("/setup", { replace: true });
+  }, [authLoading, hasCompany, navigate, user]);
 
   useEffect(() => {
     if (settings.email) {
@@ -142,10 +127,10 @@ function Index() {
 
   const handleLogout = async () => {
     await logout();
-    navigate({ to: "/login" });
+    navigate("/login", { replace: true });
   };
 
-  if (authLoading || settingsLoading) {
+  if (authLoading || settingsLoading || !user || !hasCompany) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/40">
         <p className="text-sm text-muted-foreground">Loading...</p>

@@ -1,6 +1,5 @@
 import { randomBytes } from "node:crypto";
 import { ObjectId } from "mongodb";
-import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server";
 
 import { ensureIndexes, getDb } from "./db.server";
 import { hashPassword, verifyPassword } from "./password.server";
@@ -8,13 +7,19 @@ import { hashPassword, verifyPassword } from "./password.server";
 export const SESSION_COOKIE = "horizon_session";
 const SESSION_DAYS = 30;
 
+export type SessionContext = {
+  getToken: () => string | undefined;
+  setToken: (token: string, maxAge: number) => void;
+  clearToken: () => void;
+};
+
 export type SessionUser = {
   id: string;
   username: string;
   email: string;
 };
 
-export async function createSession(userId: ObjectId) {
+export async function createSession(userId: ObjectId, context: SessionContext) {
   const db = await getDb();
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
@@ -26,26 +31,20 @@ export async function createSession(userId: ObjectId) {
     createdAt: new Date(),
   });
 
-  setCookie(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_DAYS * 24 * 60 * 60,
-  });
+  context.setToken(token, SESSION_DAYS * 24 * 60 * 60);
 }
 
-export async function destroySession() {
-  const token = getCookie(SESSION_COOKIE);
+export async function destroySession(context: SessionContext) {
+  const token = context.getToken();
   if (token) {
     const db = await getDb();
     await db.collection("sessions").deleteOne({ token });
   }
-  deleteCookie(SESSION_COOKIE, { path: "/" });
+  context.clearToken();
 }
 
-export async function getUserIdFromSession(): Promise<ObjectId | null> {
-  const token = getCookie(SESSION_COOKIE);
+export async function getUserIdFromSession(context: SessionContext): Promise<ObjectId | null> {
+  const token = context.getToken();
   if (!token) return null;
 
   const db = await getDb();
@@ -57,14 +56,14 @@ export async function getUserIdFromSession(): Promise<ObjectId | null> {
   return session.userId as ObjectId;
 }
 
-export async function requireUserId(): Promise<ObjectId> {
-  const userId = await getUserIdFromSession();
+export async function requireUserId(context: SessionContext): Promise<ObjectId> {
+  const userId = await getUserIdFromSession(context);
   if (!userId) throw new Error("Unauthorized");
   return userId;
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
-  const userId = await getUserIdFromSession();
+export async function getSessionUser(context: SessionContext): Promise<SessionUser | null> {
+  const userId = await getUserIdFromSession(context);
   if (!userId) return null;
 
   const db = await getDb();
@@ -90,11 +89,14 @@ export type SessionData = {
   dbError: boolean;
 };
 
-export async function registerUserAccount(data: {
-  username: string;
-  email: string;
-  password: string;
-}) {
+export async function registerUserAccount(
+  data: {
+    username: string;
+    email: string;
+    password: string;
+  },
+  context: SessionContext,
+) {
   await ensureIndexes();
   const db = await getDb();
   const username = data.username.trim().toLowerCase();
@@ -115,11 +117,14 @@ export async function registerUserAccount(data: {
     createdAt: new Date(),
   });
 
-  await createSession(result.insertedId);
+  await createSession(result.insertedId, context);
   return { success: true };
 }
 
-export async function loginUserAccount(data: { usernameOrEmail: string; password: string }) {
+export async function loginUserAccount(
+  data: { usernameOrEmail: string; password: string },
+  context: SessionContext,
+) {
   await ensureIndexes();
   const db = await getDb();
   const key = data.usernameOrEmail.trim().toLowerCase();
@@ -132,13 +137,13 @@ export async function loginUserAccount(data: { usernameOrEmail: string; password
     throw new Error("Invalid username/email or password");
   }
 
-  await createSession(user._id);
+  await createSession(user._id, context);
   return { success: true };
 }
 
-export async function getSessionData(): Promise<SessionData> {
+export async function getSessionData(context: SessionContext): Promise<SessionData> {
   try {
-    const user = await getSessionUser();
+    const user = await getSessionUser(context);
     if (!user) {
       return { user: null, hasCompany: false, dbError: false };
     }

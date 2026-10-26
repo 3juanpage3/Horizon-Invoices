@@ -37,6 +37,7 @@ export function useAuth() {
     user,
     isAuthenticated: !!user,
     hasCompany: sessionQuery.data?.hasCompany ?? false,
+    dbError: sessionQuery.data?.dbError ?? false,
     loaded: sessionQuery.isFetched,
     isLoading: sessionQuery.isLoading,
     login: (usernameOrEmail: string, password: string) =>

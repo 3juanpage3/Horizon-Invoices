@@ -1,50 +1,10 @@
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import type { InventoryItem } from "../inventory";
+import { apiRequest } from "./client";
 
-import { inventoryItemSchema } from "../schemas";
+export const listInventory = () => apiRequest<InventoryItem[]>("/api/inventory");
 
-export const listInventory = createServerFn({ method: "GET" }).handler(async () => {
-  const { requireUserId } = await import("../auth.server");
-  const { ensureIndexes, getDb } = await import("../db.server");
-
-  await ensureIndexes();
-  const userId = await requireUserId();
-  const db = await getDb();
-  const items = await db
-    .collection("inventory")
-    .find({ userId })
-    .sort({ name: 1 })
-    .toArray();
-
-  return items.map((item) => ({
-    id: item.id as string,
-    name: item.name as string,
-    description: item.description as string,
-    unitPrice: item.unitPrice as number,
-  }));
-});
-
-export const saveInventoryItems = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ items: z.array(inventoryItemSchema) }))
-  .handler(async ({ data }) => {
-    const { requireUserId } = await import("../auth.server");
-    const { ensureIndexes, getDb } = await import("../db.server");
-
-    await ensureIndexes();
-    const userId = await requireUserId();
-    const db = await getDb();
-
-    await db.collection("inventory").deleteMany({ userId });
-
-    if (data.items.length > 0) {
-      await db.collection("inventory").insertMany(
-        data.items.map((item) => ({
-          userId,
-          ...item,
-          updatedAt: new Date(),
-        })),
-      );
-    }
-
-    return { success: true };
+export const saveInventoryItems = ({ data }: { data: { items: InventoryItem[] } }) =>
+  apiRequest<{ success: boolean }>("/api/inventory", {
+    method: "PUT",
+    body: JSON.stringify(data),
   });

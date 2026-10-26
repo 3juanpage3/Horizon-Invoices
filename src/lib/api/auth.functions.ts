@@ -1,38 +1,25 @@
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import type { SessionData } from "../auth.server";
+import { apiRequest } from "./client";
 
-export const registerUser = createServerFn({ method: "POST" })
-  .inputValidator(
-    z.object({
-      username: z.string().min(2).max(50),
-      email: z.string().email(),
-      password: z.string().min(6),
-    }),
-  )
-  .handler(async ({ data }) => {
-    const { registerUserAccount } = await import("../auth.server");
-    return registerUserAccount(data);
+type Credentials = { usernameOrEmail: string; password: string };
+type Registration = { username: string; email: string; password: string };
+
+export const registerUser = ({ data }: { data: Registration }) =>
+  apiRequest<{ success: boolean }>("/api/auth", {
+    method: "POST",
+    body: JSON.stringify({ action: "register", ...data }),
   });
 
-export const loginUser = createServerFn({ method: "POST" })
-  .inputValidator(
-    z.object({
-      usernameOrEmail: z.string().min(1),
-      password: z.string().min(1),
-    }),
-  )
-  .handler(async ({ data }) => {
-    const { loginUserAccount } = await import("../auth.server");
-    return loginUserAccount(data);
+export const loginUser = ({ data }: { data: Credentials }) =>
+  apiRequest<{ success: boolean }>("/api/auth", {
+    method: "POST",
+    body: JSON.stringify({ action: "login", ...data }),
   });
 
-export const logoutUser = createServerFn({ method: "POST" }).handler(async () => {
-  const { destroySession } = await import("../auth.server");
-  await destroySession();
-  return { success: true };
-});
+export const logoutUser = () =>
+  apiRequest<{ success: boolean }>("/api/auth", {
+    method: "POST",
+    body: JSON.stringify({ action: "logout" }),
+  });
 
-export const getSession = createServerFn({ method: "GET" }).handler(async () => {
-  const { getSessionData } = await import("../auth.server");
-  return getSessionData();
-});
+export const getSession = () => apiRequest<SessionData>("/api/auth");

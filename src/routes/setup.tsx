@@ -1,5 +1,5 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,28 +7,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Trash2 } from "lucide-react";
 import { createCompany } from "@/lib/api/settings.functions";
-import { loadSession } from "@/lib/load-session";
 import { DEFAULT_SETTINGS, type CompanySettings } from "@/lib/settings";
 import { useAuth } from "@/lib/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 
-export const Route = createFileRoute("/setup")({
-  loader: async () => {
-    const session = await loadSession();
-    if (!session.user) throw redirect({ to: "/login" });
-    if (session.hasCompany) throw redirect({ to: "/" });
-    return session;
-  },
-  head: () => ({
-    meta: [{ title: "Set Up Company - Horizon Invoices" }],
-  }),
-  component: Setup,
-});
+export default function Setup() {
+  useEffect(() => {
+    document.title = "Set Up Company - Horizon Invoices";
+  }, []);
 
-function Setup() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, hasCompany, loaded } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<CompanySettings>({
     ...DEFAULT_SETTINGS,
@@ -36,6 +26,18 @@ function Setup() {
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!loaded) return;
+    if (!user) navigate("/login", { replace: true });
+    else if (hasCompany) navigate("/", { replace: true });
+  }, [hasCompany, loaded, navigate, user]);
+
+  useEffect(() => {
+    if (user?.email) {
+      setForm((prev) => (prev.email ? prev : { ...prev, email: user.email }));
+    }
+  }, [user?.email]);
 
   const update = (field: keyof CompanySettings, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -65,13 +67,21 @@ function Setup() {
       await createCompany({ data: form });
       await queryClient.invalidateQueries({ queryKey: ["session"] });
       await queryClient.invalidateQueries({ queryKey: ["companySettings"] });
-      navigate({ to: "/" });
+      navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save company profile");
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (!loaded || !user || hasCompany) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-indigo-100">
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 px-4 py-10">
@@ -147,7 +157,11 @@ function Setup() {
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
-                  <Input id="city" value={form.city} onChange={(e) => update("city", e.target.value)} />
+                  <Input
+                    id="city"
+                    value={form.city}
+                    onChange={(e) => update("city", e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postalCode">Postal Code</Label>

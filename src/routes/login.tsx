@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,41 +6,27 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSession } from "@/lib/api/auth.functions";
-import { loadSession } from "@/lib/load-session";
 import { useAuth } from "@/lib/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 
-export const Route = createFileRoute("/login")({
-  loader: async () => {
-    const session = await loadSession();
-    if (session.user && session.hasCompany) throw redirect({ to: "/" });
-    if (session.user && !session.hasCompany) throw redirect({ to: "/setup" });
-    return session;
-  },
-  head: () => ({
-    meta: [
-      { title: "Login - Horizon Invoices" },
-      { name: "description", content: "Login to Horizon Invoices" },
-    ],
-  }),
-  component: Login,
-});
+export default function Login() {
+  useEffect(() => {
+    document.title = "Login - Horizon Invoices";
+  }, []);
 
-function Login() {
-  const { dbError } = Route.useLoaderData();
   const [mode, setMode] = useState<"signin" | "register">("signin");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, register, isAuthenticated, hasCompany, loaded, isSubmitting } = useAuth();
+  const { login, register, isAuthenticated, hasCompany, loaded, isSubmitting, dbError } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (loaded && isAuthenticated) {
-      navigate({ to: hasCompany ? "/" : "/setup" });
+      navigate(hasCompany ? "/" : "/setup", { replace: true });
     }
   }, [loaded, isAuthenticated, hasCompany, navigate]);
 
@@ -59,7 +45,7 @@ function Login() {
         queryKey: ["session"],
         queryFn: () => getSession(),
       });
-      navigate({ to: session.hasCompany ? "/" : "/setup" });
+      navigate(session.hasCompany ? "/" : "/setup", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     }
@@ -84,7 +70,7 @@ function Login() {
 
     try {
       await register(username.trim(), email.trim(), password);
-      navigate({ to: "/setup" });
+      navigate("/setup", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     }
