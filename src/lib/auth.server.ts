@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { ObjectId } from "mongodb";
 
-import { ensureIndexes, getDb } from "./db.server";
-import { hashPassword, verifyPassword } from "./password.server";
+import { ensureIndexes, getDb } from "./db.server.js";
+import { hashPassword, verifyPassword } from "./password.server.js";
 
 export const SESSION_COOKIE = "horizon_session";
 const SESSION_DAYS = 30;

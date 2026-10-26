@@ -6,10 +6,10 @@ import {
   methodNotAllowed,
   readJson,
   sessionContext,
-} from "../src/lib/api/http.server";
-import { requireUserId } from "../src/lib/auth.server";
-import { ensureIndexes, getDb } from "../src/lib/db.server";
-import { inventoryItemSchema } from "../src/lib/schemas";
+} from "../src/lib/api/http.server.js";
+import { requireUserId } from "../src/lib/auth.server.js";
+import { ensureIndexes, getDb } from "../src/lib/db.server.js";
+import { inventoryItemSchema } from "../src/lib/schemas.js";
 
 export default apiHandler(async (request, response) => {
   if (!["GET", "PUT"].includes(request.method ?? "")) {

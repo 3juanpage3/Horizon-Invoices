@@ -6,13 +6,13 @@ import {
   methodNotAllowed,
   readJson,
   sessionContext,
-} from "../src/lib/api/http.server";
+} from "../src/lib/api/http.server.js";
 import {
   destroySession,
   getSessionData,
   loginUserAccount,
   registerUserAccount,
-} from "../src/lib/auth.server";
+} from "../src/lib/auth.server.js";
 
 const actionSchema = z.discriminatedUnion("action", [
   z.object({

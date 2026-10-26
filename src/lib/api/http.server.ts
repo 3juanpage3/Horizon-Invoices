@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { ZodError, type ZodType } from "zod";
 
-import { SESSION_COOKIE, type SessionContext } from "../auth.server";
+import { SESSION_COOKIE, type SessionContext } from "../auth.server.js";
 
 export type ApiRequest = IncomingMessage & { body?: unknown };
 export type ApiResponse = ServerResponse<IncomingMessage>;
