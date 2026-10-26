@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { TLSSocket } from "node:tls";
 import { ZodError, type ZodType } from "zod";
 
 import { SESSION_COOKIE, type SessionContext } from "../auth.server.js";
@@ -68,6 +69,46 @@ export function methodNotAllowed(response: ApiResponse, allowed: string[]) {
   json(response, 405, { error: "Method not allowed" });
 }
 
+function assertSameOriginJsonRequest(request: ApiRequest) {
+  const origin = request.headers.origin;
+  const host = request.headers.host;
+  const forwardedProto = request.headers["x-forwarded-proto"];
+  const protocol = (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto)
+    ?.split(",")[0]
+    ?.trim();
+  const scheme = protocol ?? (request.socket instanceof TLSSocket ? "https" : "http");
+
+  if (
+    typeof origin !== "string" ||
+    typeof host !== "string" ||
+    (scheme !== "http" && scheme !== "https")
+  ) {
+    throw new ApiError("Request origin is not allowed", 403);
+  }
+
+  let requestOrigin: string;
+  let suppliedOrigin: string;
+  try {
+    requestOrigin = new URL(`${scheme}://${host}`).origin;
+    const parsedOrigin = new URL(origin);
+    if (parsedOrigin.origin !== origin) {
+      throw new Error("Invalid origin");
+    }
+    suppliedOrigin = parsedOrigin.origin;
+  } catch {
+    throw new ApiError("Request origin is not allowed", 403);
+  }
+
+  if (suppliedOrigin !== requestOrigin) {
+    throw new ApiError("Request origin is not allowed", 403);
+  }
+
+  const contentType = request.headers["content-type"];
+  if (typeof contentType !== "string" || !/^application\/json(?:\s*;|$)/i.test(contentType)) {
+    throw new ApiError("Content-Type must be application/json", 415);
+  }
+}
+
 export function sessionContext(request: ApiRequest, response: ApiResponse): SessionContext {
   const cookieHeader = request.headers.cookie;
   const cookies = Array.isArray(cookieHeader) ? cookieHeader.join(";") : (cookieHeader ?? "");
@@ -97,6 +138,8 @@ export function sessionContext(request: ApiRequest, response: ApiResponse): Sess
 }
 
 export async function readJson<T>(request: ApiRequest, schema: ZodType<T>): Promise<T> {
+  assertSameOriginJsonRequest(request);
+
   let body = request.body;
 
   if (body === undefined) {
