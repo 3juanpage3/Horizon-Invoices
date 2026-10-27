@@ -38,17 +38,23 @@ production deployment.
 
 ## Password reset email
 
-The forgot-password flow uses Resend to deliver one-use password reset links.
-Before enabling it in Vercel, add these environment variables to the production
-environment (and Preview if password reset should work on previews):
+The forgot-password flow sends one-use password reset links through Gmail SMTP.
+Create a Google App Password for the sending Gmail account; do not use the
+account's regular password. Google requires 2-Step Verification to create an
+App Password. Before enabling reset emails, add these environment variables to
+the Vercel production environment (and Preview if password reset should work
+on previews):
 
 - `APP_URL`: the public HTTPS origin of the app, for example
   `https://invoices.example.com` (no path, query, or trailing route).
-- `RESEND_API_KEY`: a Resend API key stored only as a Vercel environment
-  variable.
-- `EMAIL_FROM`: a sender address on a domain verified in Resend, for example
-  `Horizon Invoices <invoices@example.com>`.
+- `GMAIL_USER`: the full Gmail address used to send reset emails.
+- `GMAIL_APP_PASSWORD`: that account's Google App Password, stored only as a
+  Vercel environment variable. Google displays it in groups; spaces may be
+  omitted when entering it.
 
+Create an App Password at [Google Account App Passwords](https://myaccount.google.com/apppasswords)
+after enabling 2-Step Verification. If Google does not offer App Passwords for
+the account, use a mail provider that supports SMTP credentials instead.
 Redeploy after configuring the variables. Reset tokens are random, stored only
 as SHA-256 hashes, expire after 30 minutes, and are consumed once. Requests are
 throttled per email address, and successful password resets revoke the user's

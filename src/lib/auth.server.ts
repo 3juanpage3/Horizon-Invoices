@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { ObjectId } from "mongodb";
+import nodemailer from "nodemailer";
 
 import { ensureIndexes, getDb } from "./db.server.js";
 import { hashPassword, verifyPassword } from "./password.server.js";
@@ -173,33 +174,31 @@ function getPasswordResetUrl(token: string) {
 }
 
 async function sendPasswordResetEmail(email: string, token: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
-  if (!apiKey || !from) {
-    throw new Error("RESEND_API_KEY and EMAIL_FROM must be configured");
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
+  if (!gmailUser || !gmailAppPassword) {
+    throw new Error("GMAIL_USER and GMAIL_APP_PASSWORD must be configured");
   }
 
   const resetUrl = getPasswordResetUrl(token);
   const escapedUrl = resetUrl.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [email],
-      subject: "Reset your Horizon Invoices password",
-      text: `Use this link to reset your Horizon Invoices password. It expires in 30 minutes and can only be used once:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
-      html: `<p>Use this link to reset your Horizon Invoices password. It expires in 30 minutes and can only be used once:</p><p><a href="${escapedUrl}">Reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`,
-    }),
-    signal: AbortSignal.timeout(10_000),
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user: gmailUser, pass: gmailAppPassword },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 10_000,
   });
 
-  if (!response.ok) {
-    throw new Error(`Password reset email provider returned ${response.status}`);
-  }
+  await transporter.sendMail({
+    from: { name: "Horizon Invoices", address: gmailUser },
+    to: email,
+    subject: "Reset your Horizon Invoices password",
+    text: `Use this link to reset your Horizon Invoices password. It expires in 30 minutes and can only be used once:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
+    html: `<p>Use this link to reset your Horizon Invoices password. It expires in 30 minutes and can only be used once:</p><p><a href="${escapedUrl}">Reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+  });
 }
 
 export async function requestPasswordReset(emailInput: string) {
