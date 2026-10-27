@@ -35,3 +35,22 @@ collection is cleared as part of deployment.
 This migration needs no `mongorestore` or schema migration when the same
 MongoDB database remains in use. Backups are still recommended before any
 production deployment.
+
+## Password reset email
+
+The forgot-password flow uses Resend to deliver one-use password reset links.
+Before enabling it in Vercel, add these environment variables to the production
+environment (and Preview if password reset should work on previews):
+
+- `APP_URL`: the public HTTPS origin of the app, for example
+  `https://invoices.example.com` (no path, query, or trailing route).
+- `RESEND_API_KEY`: a Resend API key stored only as a Vercel environment
+  variable.
+- `EMAIL_FROM`: a sender address on a domain verified in Resend, for example
+  `Horizon Invoices <invoices@example.com>`.
+
+Redeploy after configuring the variables. Reset tokens are random, stored only
+as SHA-256 hashes, expire after 30 minutes, and are consumed once. Requests are
+throttled per email address, and successful password resets revoke the user's
+existing sessions. The request response does not disclose whether the address
+has an account. Check Vercel function logs for delivery/configuration failures.

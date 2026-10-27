@@ -45,6 +45,13 @@ export async function ensureIndexes() {
     db.collection("users").createIndex({ email: 1 }, { unique: true }),
     db.collection("sessions").createIndex({ token: 1 }, { unique: true }),
     db.collection("sessions").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    db.collection("passwordResetTokens").createIndex({ userId: 1 }, { unique: true }),
+    db.collection("passwordResetTokens").createIndex({ tokenHash: 1 }, { unique: true }),
+    db.collection("passwordResetTokens").createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+    db.collection("passwordResetRequests").createIndex({ emailHash: 1 }, { unique: true }),
+    db
+      .collection("passwordResetRequests")
+      .createIndex({ requestedAt: 1 }, { expireAfterSeconds: 3600 }),
     db.collection("companies").createIndex({ userId: 1 }, { unique: true }),
     db.collection("inventory").createIndex({ userId: 1, id: 1 }, { unique: true }),
     db.collection("invoices").createIndex({ userId: 1, id: 1 }, { unique: true }),

@@ -42,6 +42,10 @@ export function apiHandler(handler: ApiHandler) {
         json(response, 401, { error: error.message });
         return;
       }
+      if (error instanceof Error && error.message === "Invalid or expired password reset link") {
+        json(response, 400, { error: error.message });
+        return;
+      }
       if (
         error instanceof Error &&
         (error.message === "Username or email is already registered" ||

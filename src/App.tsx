@@ -4,6 +4,8 @@ import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 
 import Index from "./routes/index";
 import Login from "./routes/login";
+import ForgotPassword from "./routes/forgot-password";
+import ResetPassword from "./routes/reset-password";
 import Setup from "./routes/setup";
 
 const queryClient = new QueryClient();
@@ -83,6 +85,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

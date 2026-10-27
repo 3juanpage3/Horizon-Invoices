@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSession } from "@/lib/api/auth.functions";
 import { useAuth } from "@/lib/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
-
 export default function Login() {
   useEffect(() => {
     document.title = "Login - Horizon Invoices";
@@ -22,7 +21,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const { login, register, isAuthenticated, hasCompany, loaded, isSubmitting, dbError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
+  const locationMessage = (location.state as { message?: string } | null)?.message;
 
   useEffect(() => {
     if (loaded && isAuthenticated) {
@@ -92,6 +93,11 @@ export default function Login() {
           <CardDescription>Sign in or create your account</CardDescription>
         </CardHeader>
         <CardContent>
+          {locationMessage ? (
+            <p className="mb-4 text-sm text-green-700" role="status">
+              {locationMessage}
+            </p>
+          ) : null}
           {dbError ? (
             <div className="mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               Database connection failed. On Vercel, add <strong>DATABASE_URL</strong> (and
@@ -126,6 +132,14 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                   />
+                </div>
+                <div className="text-right">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-primary underline-offset-4 hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
                 </div>
                 {error && mode === "signin" ? (
                   <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { ObjectId } from "mongodb";
 
 import { ensureIndexes, getDb } from "./db.server.js";
@@ -6,6 +6,8 @@ import { hashPassword, verifyPassword } from "./password.server.js";
 
 export const SESSION_COOKIE = "horizon_session";
 const SESSION_DAYS = 30;
+const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000;
+const PASSWORD_RESET_COOLDOWN_MS = 60 * 1000;
 
 export type SessionContext = {
   getToken: () => string | undefined;
@@ -139,6 +141,151 @@ export async function loginUserAccount(
 
   await createSession(user._id, context);
   return { success: true };
+}
+
+function sha256(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function getPasswordResetUrl(token: string) {
+  const configuredUrl = process.env.APP_URL;
+  if (!configuredUrl) {
+    throw new Error("APP_URL is not configured");
+  }
+
+  const appUrl = new URL(configuredUrl);
+  if (
+    (appUrl.protocol !== "https:" && appUrl.protocol !== "http:") ||
+    !appUrl.hostname ||
+    appUrl.username ||
+    appUrl.password ||
+    appUrl.pathname !== "/" ||
+    appUrl.search ||
+    appUrl.hash ||
+    (process.env.NODE_ENV === "production" && appUrl.protocol !== "https:")
+  ) {
+    throw new Error("APP_URL must be a production HTTPS origin");
+  }
+
+  const resetUrl = new URL("/reset-password", appUrl);
+  resetUrl.searchParams.set("token", token);
+  return resetUrl.toString();
+}
+
+async function sendPasswordResetEmail(email: string, token: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) {
+    throw new Error("RESEND_API_KEY and EMAIL_FROM must be configured");
+  }
+
+  const resetUrl = getPasswordResetUrl(token);
+  const escapedUrl = resetUrl.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [email],
+      subject: "Reset your Horizon Invoices password",
+      text: `Use this link to reset your Horizon Invoices password. It expires in 30 minutes and can only be used once:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
+      html: `<p>Use this link to reset your Horizon Invoices password. It expires in 30 minutes and can only be used once:</p><p><a href="${escapedUrl}">Reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Password reset email provider returned ${response.status}`);
+  }
+}
+
+export async function requestPasswordReset(emailInput: string) {
+  await ensureIndexes();
+  const db = await getDb();
+  const email = emailInput.trim().toLowerCase();
+  const emailHash = sha256(email);
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - PASSWORD_RESET_COOLDOWN_MS);
+  const requests = db.collection("passwordResetRequests");
+
+  await requests.findOneAndUpdate(
+    { emailHash },
+    {
+      $setOnInsert: {
+        emailHash,
+        requestedAt: new Date(now.getTime() - PASSWORD_RESET_COOLDOWN_MS),
+      },
+    },
+    { upsert: true },
+  );
+
+  const requestSlot = await requests.findOneAndUpdate(
+    { emailHash, requestedAt: { $lte: cutoff } },
+    { $set: { requestedAt: now } },
+  );
+  if (!requestSlot) return;
+
+  const user = await db.collection("users").findOne({ email });
+  if (!user) return;
+
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = sha256(token);
+  await db.collection("passwordResetTokens").updateOne(
+    { userId: user._id },
+    {
+      $set: {
+        userId: user._id,
+        tokenHash,
+        expiresAt: new Date(now.getTime() + PASSWORD_RESET_TTL_MS),
+        createdAt: now,
+      },
+    },
+    { upsert: true },
+  );
+
+  try {
+    await sendPasswordResetEmail(email, token);
+  } catch (error) {
+    console.error("Password reset email delivery failed:", error);
+    try {
+      await Promise.all([
+        db.collection("passwordResetTokens").deleteOne({ userId: user._id, tokenHash }),
+        requests.updateOne({ emailHash, requestedAt: now }, { $set: { requestedAt: cutoff } }),
+      ]);
+    } catch (cleanupError) {
+      console.error("Password reset cleanup failed:", cleanupError);
+    }
+  }
+}
+
+export async function resetPassword(token: string, password: string) {
+  await ensureIndexes();
+  const db = await getDb();
+  const tokenHash = sha256(token);
+  const reset = await db.collection("passwordResetTokens").findOneAndDelete({
+    tokenHash,
+    expiresAt: { $gt: new Date() },
+  });
+
+  if (!reset) {
+    throw new Error("Invalid or expired password reset link");
+  }
+
+  const passwordHash = await hashPassword(password);
+  const result = await db
+    .collection("users")
+    .updateOne({ _id: reset.userId }, { $set: { passwordHash } });
+  if (result.matchedCount !== 1) {
+    throw new Error("Invalid or expired password reset link");
+  }
+
+  await Promise.all([
+    db.collection("sessions").deleteMany({ userId: reset.userId }),
+    db.collection("passwordResetTokens").deleteMany({ userId: reset.userId }),
+  ]);
 }
 
 export async function getSessionData(context: SessionContext): Promise<SessionData> {
