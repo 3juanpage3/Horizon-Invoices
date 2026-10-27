@@ -46,7 +46,9 @@ the Vercel production environment (and Preview if password reset should work
 on previews):
 
 - `APP_URL`: the public HTTPS origin of the app, for example
-  `https://invoices.example.com` (no path, query, or trailing route).
+  `https://invoices.example.com` (no path, query, or trailing route). Include
+  `https://`; a bare host such as `invoices.example.com` is also accepted and
+  treated as HTTPS in production.
 - `GMAIL_USER`: the full Gmail address used to send reset emails.
 - `GMAIL_APP_PASSWORD`: that account's Google App Password, stored only as a
   Vercel environment variable. Google displays it in groups; spaces may be

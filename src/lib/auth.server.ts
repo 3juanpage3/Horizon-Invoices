@@ -154,7 +154,10 @@ function getPasswordResetUrl(token: string) {
     throw new Error("APP_URL is not configured");
   }
 
-  const appUrl = new URL(configuredUrl);
+  const trimmedUrl = configuredUrl.trim();
+  const appUrl = new URL(
+    /^[a-z][a-z\d+.-]*:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`,
+  );
   if (
     (appUrl.protocol !== "https:" && appUrl.protocol !== "http:") ||
     !appUrl.hostname ||
