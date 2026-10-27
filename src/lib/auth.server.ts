@@ -176,6 +176,19 @@ function getPasswordResetUrl(token: string) {
   return resetUrl.toString();
 }
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    };
+    return entities[character]!;
+  });
+}
+
 async function sendPasswordResetEmail(email: string, token: string) {
   const gmailUser = process.env.GMAIL_USER?.trim();
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
@@ -184,7 +197,61 @@ async function sendPasswordResetEmail(email: string, token: string) {
   }
 
   const resetUrl = getPasswordResetUrl(token);
-  const escapedUrl = resetUrl.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+  const escapedUrl = escapeHtml(resetUrl);
+  const text = [
+    "Hello,",
+    "",
+    "We received a request to reset the password for your Horizon Invoices account.",
+    "Use the link below to choose a new password:",
+    "",
+    resetUrl,
+    "",
+    "For your security, this link expires in 30 minutes and can only be used once.",
+    "",
+    "If you did not request a password reset, you can ignore this email. Your password will remain unchanged.",
+    "",
+    "Horizon Invoices",
+  ].join("\n");
+  const html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Reset your password</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f6fb;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e5eaf2;border-radius:12px;">
+            <tr>
+              <td style="padding:32px 36px 12px;">
+                <p style="margin:0;color:#3157a4;font-size:14px;font-weight:bold;letter-spacing:0.04em;">HORIZON INVOICES</p>
+                <h1 style="margin:24px 0 12px;color:#172033;font-size:24px;line-height:1.3;">Reset your password</h1>
+                <p style="margin:0;color:#4b5565;font-size:16px;line-height:1.6;">We received a request to reset the password for your Horizon Invoices account. Use the button below to choose a new password.</p>
+              </td>
+            </tr>
+            <tr>
+              <td align="left" style="padding:24px 36px;">
+                <a href="${escapedUrl}" style="display:inline-block;padding:13px 22px;background-color:#3157a4;border-radius:6px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;">Reset password</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 36px 32px;">
+                <p style="margin:0 0 12px;color:#4b5565;font-size:14px;line-height:1.6;">For your security, this link expires in 30 minutes and can only be used once.</p>
+                <p style="margin:0 0 8px;color:#4b5565;font-size:14px;line-height:1.6;">If the button doesn’t work, copy and paste this address into your browser:</p>
+                <p style="margin:0 0 20px;overflow-wrap:anywhere;font-size:13px;line-height:1.6;"><a href="${escapedUrl}" style="color:#3157a4;">${escapedUrl}</a></p>
+                <p style="margin:0;color:#667085;font-size:13px;line-height:1.6;">If you didn’t request a password reset, you can ignore this email. Your password will remain unchanged.</p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:18px 0 0;color:#7a8495;font-size:12px;line-height:1.5;">This is an automated account-security message from Horizon Invoices.</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
@@ -198,9 +265,9 @@ async function sendPasswordResetEmail(email: string, token: string) {
   await transporter.sendMail({
     from: { name: "Horizon Invoices", address: gmailUser },
     to: email,
-    subject: "Reset your Horizon Invoices password",
-    text: `Use this link to reset your Horizon Invoices password. It expires in 30 minutes and can only be used once:\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
-    html: `<p>Use this link to reset your Horizon Invoices password. It expires in 30 minutes and can only be used once:</p><p><a href="${escapedUrl}">Reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`,
+    subject: "Password reset request for Horizon Invoices",
+    text,
+    html,
   });
 }
 

@@ -62,3 +62,12 @@ as SHA-256 hashes, expire after 30 minutes, and are consumed once. Requests are
 throttled per email address, and successful password resets revoke the user's
 existing sessions. The request response does not disclose whether the address
 has an account. Check Vercel function logs for delivery/configuration failures.
+
+Email formatting and SMTP authentication improve clarity and legitimacy, but
+cannot guarantee inbox placement. Recipient providers decide whether to put a
+message in the inbox, spam, or another folder. For better deliverability, use a
+consistent sender, send only requested reset messages, avoid repeated testing,
+and ask users to check Spam/Junk and mark a legitimate message as "Not spam."
+A personal Gmail sender does not let you configure DNS authentication for your
+own sending domain. For a branded domain and higher-volume sending, use a
+domain-based mail service and configure its SPF, DKIM, and DMARC records.
